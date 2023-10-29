@@ -1,5 +1,5 @@
 const Panels = {
-    LOADING: 'loading-panel2'
+    LOADING: 'loading-panel'
 };
 
 async function downloadPanels() {
@@ -19,7 +19,15 @@ function handlePanels(panels) {
     
     Object.keys(Panels).forEach((key, index) => Panels[key] = panels[index]);
     
+    downloadCards().then(handleCards);
+}
+
+async function downloadCards() {
     document.getElementById('main-content').innerHTML = Panels.LOADING;
+}
+
+function handleCards() {
+    
 }
 
 function displayFatalError() {
