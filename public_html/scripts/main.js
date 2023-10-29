@@ -1,7 +1,5 @@
 const Panels = {
-    RED: 'red-panel',
-    GREEN: 'green-panel',
-    BLUE: 'blue-panel'
+    LOADING: 'loading-panel'
 };
 
 async function downloadPanels() {
@@ -21,7 +19,7 @@ function handlePanels(panels) {
     
     Object.keys(Panels).forEach((key, index) => Panels[key] = panels[index]);
     
-    document.getElementById('main-content').innerHTML = Panels.GREEN;
+    document.getElementById('main-content').innerHTML = Panels.LOADING;
 }
 
 function displayError() {
