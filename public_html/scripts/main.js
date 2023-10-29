@@ -1,19 +1,19 @@
 const Panels = {
-    LOADING: 'loading-panel'
+    LOADING: 'loading-panel2'
 };
 
 async function downloadPanels() {
     try {
         return await Promise.all(Object.values(Panels).map(name => fetch(`${name}.html`))
                 .map(promise => promise.then(response => response.text())));
-    } catch (error) {        
+    } catch (_) {        
         return [];
     }    
 }
 
 function handlePanels(panels) {
     if (panels.length === 0) {
-        displayError();
+        displayFatalError();
         return;
     } 
     
@@ -22,8 +22,8 @@ function handlePanels(panels) {
     document.getElementById('main-content').innerHTML = Panels.LOADING;
 }
 
-function displayError() {
-    document.getElementById('main-content').innerHTML = 'Error!';
+function displayFatalError() {
+    document.getElementById('main-content').innerHTML = '<span id="fatal-error">&#x1F480;</span>';
 }
 
 function init() {

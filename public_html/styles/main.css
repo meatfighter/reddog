@@ -30,3 +30,7 @@
     background: #0075FF;
     border-radius: 4px;    
 }
+
+#fatal-error {
+    font-size: 4em;
+}
