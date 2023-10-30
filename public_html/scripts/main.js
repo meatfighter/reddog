@@ -4,8 +4,8 @@ const Panels = {
 
 async function downloadPanels() {
     try {
-        return await Promise.all(Object.values(Panels).map(name => fetch(`${name}.html`))
-                .map(promise => promise.then(response => response.text())));
+        return await Promise.all(Object.values(Panels).map(name => fetch(`${name}.html`)
+                .then(response => response.text())));
     } catch (_) {        
         return [];
     }    
@@ -24,10 +24,25 @@ function handlePanels(panels) {
 
 async function downloadCards() {
     document.getElementById('main-content').innerHTML = Panels.LOADING;
+    
+    const ranks = [ '2', '3', '4', '5', '6', '7', '8', '9', '10', 'jack', 'queen', 'king', 'ace' ];
+    const suits = [ 'clubs', 'diamonds', 'hearts', 'spades' ];
+    
+    try {        
+        return await Promise.all(ranks.flatMap(rank => suits.map(suit => fetch(`cards/${rank}_of_${suit}.svg`)
+                .then(response => response.text()))));
+    } catch (_) {        
+        return [];
+    }    
 }
 
-function handleCards() {
+function handleCards(cards) {
+    if (cards.length === 0) {
+        displayFatalError();
+        return;
+    }
     
+    document.getElementById('main-content').innerHTML = cards[51];
 }
 
 function displayFatalError() {
