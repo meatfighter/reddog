@@ -28,12 +28,18 @@ async function downloadCards() {
     const ranks = [ '2', '3', '4', '5', '6', '7', '8', '9', '10', 'jack', 'queen', 'king', 'ace' ];
     const suits = [ 'clubs', 'diamonds', 'hearts', 'spades' ];
     
-    try {        
+    try {
+        const progressBar = document.getElementById('loading-progress');
+        let count = 0;
         return await Promise.all(ranks.flatMap(rank => suits.map(suit => fetch(`cards/${rank}_of_${suit}.svg`)
-                .then(response => response.text()))));
+                .then(response => {
+                    progressBar.value = ++count;
+                    return response.text();
+                })
+        )));
     } catch (_) {        
         return [];
-    }    
+    } 
 }
 
 function handleCards(cards) {
