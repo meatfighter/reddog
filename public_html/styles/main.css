@@ -2,6 +2,9 @@ body {
     background-color: #B39472;
     margin: 0;
     padding: 0;
+    font-family: 'Open Sans', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 #main-content {
@@ -41,11 +44,16 @@ body {
     font-size: 4em;
 }
 
+.container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
 .button-row {
     display: flex;
     justify-content: center;
     gap: 10px;
-    margin-top: 20px;
 }
 
 .button {
@@ -69,4 +77,18 @@ body {
 .button:active {
     transform: translateY(2px);
     box-shadow: none;
+}
+
+.button:focus {
+    background-color: #008CBA;
+    outline: none;
+}
+
+.info {
+    text-align: left;
+    margin-bottom: 20px;
+}
+
+.info p {
+    margin: 5px 0;
 }
