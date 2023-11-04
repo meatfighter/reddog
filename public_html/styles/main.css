@@ -1,5 +1,6 @@
 body {
     background-color: #B39472;
+    color: #FFFFFF;
     margin: 0;
     padding: 0;
     font-family: 'Open Sans', sans-serif;
@@ -44,10 +45,26 @@ body {
     font-size: 4em;
 }
 
-.container {
+.row-container {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+.column-container {
     display: flex;
     flex-direction: column;
     align-items: center;
+}
+
+.left-card {
+    width: 187.0869141pt;
+    height: 242.6669922pt;
+}
+
+.right-card {
+    width: 167.0869141pt;
+    height: 242.6669922pt;
 }
 
 .button-row {
@@ -80,12 +97,21 @@ body {
 }
 
 .button:focus {
-    background-color: #008CBA;
+    background-color: #45a049;
     outline: none;
+}
+
+.place-bet {
+    margin-bottom: 0px;
+}
+
+.place-bet p {
+    margin: 10px 0;
 }
 
 .info {
     text-align: left;
+    margin-top: 20px;
     margin-bottom: 20px;
 }
 
