@@ -101,6 +101,16 @@ body {
     outline: none;
 }
 
+.button:disabled {
+    background-color: #7f7f7f;
+    cursor: not-allowed;
+}
+
+button:disabled.button:active {
+    transform: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
 .message {
     margin-bottom: 0px;
 }

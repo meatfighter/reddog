@@ -103,15 +103,26 @@ const Panels = {
     RAISE: 'raise-panel'
 };
 
+const State = {
+    BETTING: 0,
+    RAISING: 1,
+    CONTINUING: 2
+};
+
+const MAX_FETCH_RETRIES = 5;
+
+const BACK = 52;
+
 const info = {
-    balance: 10000,
+    balance: 0,
     bet: '--',
     win: '--',
     spread: '--',
     pays: '--'
 };
 
-const MAX_FETCH_RETRIES = 5;
+let state = State.BETTING;
+let svgCards;
 
 async function fetchContent(url, options = {}, responseType = 'text') {
     for (let i = MAX_FETCH_RETRIES - 1; i >= 0; --i) {
@@ -170,14 +181,50 @@ function downloadCards() {
 }
 
 function handleCards(cards) {
+    svgCards = cards;
     document.getElementById('main-content').innerHTML = Panels.MAIN;
-    document.getElementById('button-row').innerHTML = Panels.BET;
-    document.getElementById('left-card').innerHTML = cards[52];
-    document.getElementById('middle-card').innerHTML = '';
-    document.getElementById('right-card').innerHTML = cards[52];
-    document.getElementById('message').innerHTML = 'Place your bet:';
-    
     updateInfo();
+    showBetPanel();
+}
+
+function handleBetButton(event) {
+    switch (event.target.id) {
+        case '10button':
+            info.bet = 10;
+            break;
+        case '20button':
+            info.bet = 20;
+            break;
+        case '50button':
+            info.bet = 50;
+            break;
+        default:
+            info.bet = 100;
+            break;
+    }
+    updateInfo();
+}
+
+function showBetPanel() {
+    state = State.BETTING;
+    document.getElementById('button-row').innerHTML = Panels.BET;
+    document.getElementById('left-card').innerHTML = svgCards[BACK];
+    document.getElementById('middle-card').innerHTML = '';
+    document.getElementById('right-card').innerHTML = svgCards[BACK];
+    document.getElementById('message').innerHTML = 'Place your bet:';
+    showBetButton(10);
+    showBetButton(20);
+    showBetButton(50);
+    showBetButton(100);
+}
+
+function showBetButton(value) {
+    const button = document.getElementById(`${value}button`);
+    if (info.balance < value) {
+        button.disabled = true;
+    } else {
+        button.addEventListener('click', handleBetButton);
+    }
 }
 
 function updateInfo() {
