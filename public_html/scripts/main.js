@@ -2,26 +2,23 @@ class ArrayShuffler {
     
     #array;
     #index;
-    #shuffleLength;
     #shuffleThreshold;
     
-    constructor(array, shuffleLength, shuffleThreshold) {
-        this.#array = array;
-        this.#index = array.length;
-        this.#shuffleLength = shuffleLength ? shuffleLength : array.length;
-        this.#shuffleThreshold = shuffleThreshold ? shuffleThreshold : array.length;
+    constructor(array, shuffleThreshold) {
+        this.#array = array;        
+        this.#index = this.#shuffleThreshold = shuffleThreshold ? shuffleThreshold : array.length;
     }
 
     next() {
         if (this.#index >= this.#shuffleThreshold) {
-            this.shuffle();
+            this.#shuffle();
             this.#index = 0;
         }
         return this.#array[this.#index++];
     }
 
     #shuffle() {
-        for (let i = this.#shuffleLength - 1; i > 0; i--) {
+        for (let i = this.#array.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [this.#array[i], this.#array[j]] = [this.#array[j], this.#array[i]];
         }
@@ -113,15 +110,17 @@ const MAX_FETCH_RETRIES = 5;
 
 const BACK = 52;
 
+const deck = new ArrayShuffler(Array.from({ length: 52 }, (_, index) => index), 49);
+
 const info = {
-    balance: 0,
+    balance: 10000,
     bet: '--',
     win: '--',
     spread: '--',
     pays: '--'
 };
 
-let state = State.BETTING;
+let state;
 let svgCards;
 
 async function fetchContent(url, options = {}, responseType = 'text') {
@@ -203,6 +202,7 @@ function handleBetButton(event) {
             break;
     }
     updateInfo();
+    dealTwoCards();
 }
 
 function showBetPanel() {
@@ -218,13 +218,62 @@ function showBetPanel() {
     showBetButton(100);
 }
 
-function showBetButton(value) {
+function showBetButton(value) {    
     const button = document.getElementById(`${value}button`);
     if (info.balance < value) {
         button.disabled = true;
     } else {
         button.addEventListener('click', handleBetButton);
     }
+}
+
+function dealTwoCards() {
+    const leftCardIndex = deck.next();
+    const rightCardIndex = deck.next();
+    
+    document.getElementById('left-card').innerHTML = svgCards[leftCardIndex];
+    document.getElementById('right-card').innerHTML = svgCards[rightCardIndex];
+    
+    const leftCardValue = Math.floor(leftCardIndex / 4);
+    const rightCardValue = Math.floor(rightCardIndex / 4);
+    const spread = Math.abs(leftCardValue - rightCardValue) - 1;
+    
+    switch (spread) {
+        case -1: {
+            const middleCardIndex = deck.next();
+            document.getElementById('middle-card').innerHTML = svgCards[middleCardIndex];
+            const middleCardValue = Math.floor(middleCardIndex / 4);
+            if (leftCardValue === middleCardValue) {
+                info.spread = '3 of a Kind';
+                info.pays = '11:1';
+            } else {
+                info.spread = 'Pair';
+                info.pays = 'Push';
+            }
+            break;
+        }
+        case 0:
+            info.spread = 'Consecutive';
+            info.pays = 'Push';
+            break;
+        case 1:
+            info.spread = spread;
+            info.pays = '5:1';
+            break;
+        case 2:
+            info.spread = spread;
+            info.pays = '4:1';
+            break;
+        case 3:
+            info.spread = spread;
+            info.pays = '2:1';
+            break;
+        default:
+            info.spread = spread;
+            info.pays = 'Even Money';
+            break;
+    }
+    updateInfo();
 }
 
 function updateInfo() {
