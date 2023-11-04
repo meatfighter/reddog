@@ -95,9 +95,20 @@ const losePhrases = new ArrayShuffler([
     'Too bad.'
 ]);
 
-const Panels = {
+const Panels = {    
+    BET: 'bet-panel',
+    CONTINUE: 'continue-panel',    
     LOADING: 'loading-panel',
-    BET: 'bet-panel'
+    MAIN: 'main-panel',
+    RAISE: 'raise-panel'
+};
+
+const info = {
+    balance: 10000,
+    bet: '--',
+    win: '--',
+    spread: '--',
+    pays: '--'
 };
 
 const MAX_FETCH_RETRIES = 5;
@@ -159,11 +170,19 @@ function downloadCards() {
 }
 
 function handleCards(cards) {
-    document.getElementById('main-content').innerHTML = Panels.BET;
-    
+    document.getElementById('main-content').innerHTML = Panels.MAIN;
+    document.getElementById('button-row').innerHTML = Panels.BET;
     document.getElementById('left-card').innerHTML = cards[52];
-    document.getElementById('middle-card').innerHTML = cards[1];
-    document.getElementById('right-card').innerHTML = cards[2];
+    document.getElementById('middle-card').innerHTML = '';
+    document.getElementById('right-card').innerHTML = cards[52];
+    document.getElementById('message').innerHTML = 'Place your bet:';
+    
+    updateInfo();
+}
+
+function updateInfo() {
+    document.getElementById('info').innerHTML = `<p>Balance: ${info.balance}</p><p>Bet: ${info.bet}</p>`
+            + `<p>Win: ${info.win}</p><p>Spread: ${info.spread}</p><p>Pays: ${info.pays}</p>`;
 }
 
 function displayFatalError() {
