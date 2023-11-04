@@ -1,54 +1,68 @@
 const Panels = {
-    LOADING: 'loading-panel'
+    LOADING: 'loading-panel',
+    BET: 'bet-panel'
 };
 
-async function downloadPanels() {
-    try {
-        return await Promise.all(Object.values(Panels).map(name => fetch(`${name}.html`)
-                .then(response => response.text())));
-    } catch (_) {        
-        return [];
-    }    
+const MAX_FETCH_RETRIES = 5;
+
+async function fetchContent(url, options = {}, responseType = 'text') {
+    for (let i = MAX_FETCH_RETRIES - 1; i >= 0; --i) {
+        try {
+            let response = await fetch(url, options);
+            if (response.ok) {
+                switch (responseType) {
+                    case 'arrayBuffer':
+                        return await response.arrayBuffer();
+                    case 'blob':
+                        return await response.blob();
+                    case 'json':
+                        return await response.json();
+                    default:
+                        return await response.text();                        
+                }                
+            }
+        } catch (error) {
+            if (i === 0) {
+                throw error;
+            }
+        }
+    }
+    throw new Error("Failed to fetch.");
+}
+
+//function makeSameWidth(maxWidthId, ...ids) {
+//    const width = document.getElementById(maxWidthId).clientWidth + 'px';
+//    ids.forEach(id => document.getElementById(id).style.width = width);
+//}
+
+function downloadPanels() {
+    Promise.all(Object.values(Panels).map(name => fetchContent(`${name}.html`))).then(panels => handlePanels(panels))
+            .catch(_ => displayFatalError());
 }
 
 function handlePanels(panels) {
-    if (panels.length === 0) {
-        displayFatalError();
-        return;
-    } 
-    
-    Object.keys(Panels).forEach((key, index) => Panels[key] = panels[index]);
-    
-    downloadCards().then(handleCards);
+    Object.keys(Panels).forEach((key, index) => Panels[key] = panels[index]);    
+    downloadCards();
 }
 
-async function downloadCards() {
+function downloadCards() {
     document.getElementById('main-content').innerHTML = Panels.LOADING;
     
     const ranks = [ '2', '3', '4', '5', '6', '7', '8', '9', '10', 'jack', 'queen', 'king', 'ace' ];
     const suits = [ 'clubs', 'diamonds', 'hearts', 'spades' ];
     
-    try {
-        const progressBar = document.getElementById('loading-progress');
-        let count = 0;
-        return await Promise.all(ranks.flatMap(rank => suits.map(suit => fetch(`cards/${rank}_of_${suit}.svg`)
-                .then(response => {
-                    progressBar.value = ++count;
-                    return response.text();
-                })
-        )));
-    } catch (_) {        
-        return [];
-    } 
+    const progressBar = document.getElementById('loading-progress');
+    let count = 0;
+    Promise.all(ranks.flatMap(rank => suits.map(suit => fetchContent(`cards/${rank}_of_${suit}.svg`)
+            .then(text => {
+                progressBar.value = ++count;
+                return text;
+            })
+    ))).then(cards => handleCards(cards)).catch(_ => displayFatalError());
 }
 
 function handleCards(cards) {
-    if (cards.length === 0) {
-        displayFatalError();
-        return;
-    }
-    
-    document.getElementById('main-content').innerHTML = cards[51];
+    document.getElementById('main-content').innerHTML = Panels.BET;
 }
 
 function displayFatalError() {
@@ -56,7 +70,7 @@ function displayFatalError() {
 }
 
 function init() {
-    downloadPanels().then(handlePanels);
+    downloadPanels();
 }
 
 document.addEventListener('DOMContentLoaded', init);
