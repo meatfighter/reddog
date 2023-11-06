@@ -46,25 +46,25 @@ const winPhrases = new ArrayShuffler([
     'Nice play!',
     'Nice one!',
     'A win in the cards!',
-    'It\s a win!',
-    'You\re doing great!'
+    'It\'s a win!',
+    'You\'re doing great!'
 ]);
 
 const tiePhrases = new ArrayShuffler([
     'Push.',
     'Tie.',
     'Draw.',
-    'It\s a push.',
-    'It\s a tie.',
-    'It\s a draw.',
+    'It\'s a push.',
+    'It\'s a tie.',
+    'It\'s a draw.',
     'We have a push.',
     'We have a tie.',
     'We have a draw.',
-    'The game\s a tie.',
-    'The game\s a draw.',    
+    'The game\'s a tie.',
+    'The game\'s a draw.',    
     'No winners or losers.',    
     'No losses or wins.',
-    'It\s a stand-off.',
+    'It\'s a stand-off.',
     'No change in balance.',
     'Your bet is returned.',
     'Your wager is returned.',
@@ -95,7 +95,7 @@ const losePhrases = new ArrayShuffler([
     'Not in the cards.',
     'Nope.',
     'Perhaps next time.',
-    'It\s a loss.',
+    'It\'s a loss.',
     'Too bad.',
     'Try again.',
     'Give it another shot.'
@@ -114,6 +114,8 @@ const State = {
     RAISING: 1,
     CONTINUING: 2
 };
+
+const CARD_FLIP_MILLIS = 250;
 
 const MAX_FETCH_RETRIES = 5;
 
@@ -193,6 +195,8 @@ function handleCards(cards) {
 }
 
 function handleBetButton(event) {
+    document.getElementById('message').style.visibility = 'hidden';
+    document.getElementById('button-row').style.visibility = 'hidden';
     switch (event.target.id) {
         case 'button10':
             info.bet = 10;
@@ -222,8 +226,14 @@ function showBetPanel() {
     document.getElementById('left-card').innerHTML = svgCards[BACK];
     document.getElementById('middle-card').innerHTML = '';
     document.getElementById('right-card').innerHTML = svgCards[BACK];
-    document.getElementById('message').innerHTML = 'Place your bet:';
-    document.getElementById('button-row').innerHTML = Panels.BET;
+        
+    const message = document.getElementById('message');
+    message.innerHTML = 'Place your bet:';
+    message.style.visibility = 'visible';
+    const buttonRow = document.getElementById('button-row');
+    buttonRow.innerHTML = Panels.BET;
+    buttonRow.style.visibility = 'visible';
+    
     showBetButton(10);
     showBetButton(20);
     showBetButton(50);
@@ -240,13 +250,17 @@ function showBetButton(value) {
 }
 
 function handleRaiseButton() {
+    document.getElementById('message').style.visibility = 'hidden';
+    document.getElementById('button-row').style.visibility = 'hidden';
     info.balance -= info.bet;
     info.bet *= 2;
     updateInfo();
     handleCallButton();
 }
 
-function handleCallButton() {
+async function handleCallButton() {
+    document.getElementById('message').style.visibility = 'hidden';
+    document.getElementById('button-row').style.visibility = 'hidden';
     state = State.CONTINUING;
     
     let minCardValue;
@@ -260,7 +274,9 @@ function handleCallButton() {
     }
     
     const middleCardIndex = deck.next();
-    document.getElementById('middle-card').innerHTML = svgCards[middleCardIndex];
+    
+    await await flipCardOver('middle-card', middleCardIndex);
+    
     const middleCardValue = Math.floor(middleCardIndex / 4);
     
     if (middleCardValue > minCardValue && middleCardValue < maxCardValue) {
@@ -289,8 +305,13 @@ function handleCallButton() {
 
 function showRaisePanel() {
     state = State.RAISING;
-    document.getElementById('message').innerHTML = 'Raise your bet?';
-    document.getElementById('button-row').innerHTML = Panels.RAISE;
+    
+    const message = document.getElementById('message');
+    message.innerHTML = 'Raise your bet?';
+    message.style.visibility = 'visible';
+    const buttonRow = document.getElementById('button-row');
+    buttonRow.innerHTML = Panels.RAISE;
+    buttonRow.style.visibility = 'visible';
     
     const raiseButton = document.getElementById('raiseButton');
     if (info.balance >= info.bet) {
@@ -306,20 +327,62 @@ function handleContinueButton() {
     showBetPanel();
 }
 
-function showContinuePanel(message) {
+function showContinuePanel(msg) {
     state = State.CONTINUING;
-    document.getElementById('message').innerHTML = message;
-    document.getElementById('button-row').innerHTML = Panels.CONTINUE;
+    
+    const message = document.getElementById('message');
+    message.innerHTML = msg;
+    message.style.visibility = 'visible';
+    const buttonRow = document.getElementById('button-row');
+    buttonRow.innerHTML = Panels.CONTINUE;
+    buttonRow.style.visibility = 'visible';    
+    
     document.getElementById('continueButton').addEventListener('click', handleContinueButton);
 }
 
-function dealTwoCards() {
+async function flipCardOver(elementName, cardIndex) {
+    
+    const element = document.getElementById(elementName);
+    
+    return new Promise(resolve => {
+        
+        let startTime;
+        let back = true;
+        
+        function animate(currentTime) {
+            if (!startTime) {
+                startTime = currentTime;
+            }
+            const elapsedTime = currentTime - startTime;
+            const fraction = Math.min(elapsedTime / CARD_FLIP_MILLIS, 1);
+            let scale = Math.cos(Math.PI * fraction);
+            if (scale < 0) {
+                if (back) {
+                    back = false;
+                    element.innerHTML = svgCards[cardIndex];
+                }
+                scale = -scale;
+            }
+            element.style.transform = `scaleX(${scale})`;
+            
+            if (fraction < 1) {
+                requestAnimationFrame(animate);
+            } else {
+                resolve();
+            }
+        }
+       
+        requestAnimationFrame(animate);
+    });
+}
+
+async function dealTwoCards() {
     const leftCardIndex = deck.next();
     const rightCardIndex = deck.next();
     
-    document.getElementById('left-card').innerHTML = svgCards[leftCardIndex];
-    document.getElementById('right-card').innerHTML = svgCards[rightCardIndex];
-    
+    await flipCardOver('left-card', leftCardIndex);
+    await flipCardOver('right-card', rightCardIndex);
+       
     leftCardValue = Math.floor(leftCardIndex / 4);
     rightCardValue = Math.floor(rightCardIndex / 4);
     const spread = Math.abs(leftCardValue - rightCardValue) - 1;
@@ -327,7 +390,9 @@ function dealTwoCards() {
     switch (spread) {
         case -1: {            
             const middleCardIndex = deck.next();
-            document.getElementById('middle-card').innerHTML = svgCards[middleCardIndex];
+            
+            await flipCardOver('middle-card', middleCardIndex);
+            
             const middleCardValue = Math.floor(middleCardIndex / 4);
             if (leftCardValue === middleCardValue) {
                 info.spread = '3 of a Kind';
