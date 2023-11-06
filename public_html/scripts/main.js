@@ -27,8 +27,10 @@ class ArrayShuffler {
 
 const winPhrases = new ArrayShuffler([
     'Congratulations!',
+    'Congrats!',
     'Winner, winner, chicken dinner!',
     'You\'ve done it!',
+    'You did it!',
     'Winning hand!',
     'Well played!',
     'Lucky you!',
@@ -42,6 +44,7 @@ const winPhrases = new ArrayShuffler([
     'A clear win!',
     'Luck is on your side!',
     'Nice play!',
+    'Nice one!',
     'A win in the cards!',
     'It\s a win!',
     'You\re doing great!'
@@ -66,17 +69,21 @@ const tiePhrases = new ArrayShuffler([
     'Your bet is returned.',
     'Your wager is returned.',
     'Take back your bet.',
-    'Take back your wager.'
+    'Take back your wager.',
+    'Have your bet back.',
+    'Have your wager back.'
 ]);
 
 const losePhrases = new ArrayShuffler([
     'Better luck next time.',
     'Unlucky hand.',
     'Tough break.',
+    'Tough luck.',
     'It\'s all part of the game.',
     'You\'ll get it next time.',
     'Unfortunately, it\'s a loss.',
     'Not your time.',
+    'Not this time.',
     'It\'s all part of the thrill.',
     'No worries, there\'s more to come.',
     'Keep playing, luck can turn.',
@@ -89,7 +96,9 @@ const losePhrases = new ArrayShuffler([
     'Nope.',
     'Perhaps next time.',
     'It\s a loss.',
-    'Too bad.'
+    'Too bad.',
+    'Try again.',
+    'Give it another shot.'
 ]);
 
 const Panels = {    
@@ -122,6 +131,8 @@ const info = {
 
 let state;
 let svgCards;
+let leftCardValue;
+let rightCardValue;
 
 async function fetchContent(url, options = {}, responseType = 'text') {
     for (let i = MAX_FETCH_RETRIES - 1; i >= 0; --i) {
@@ -147,11 +158,6 @@ async function fetchContent(url, options = {}, responseType = 'text') {
     }
     throw new Error("Failed to fetch.");
 }
-
-//function makeSameWidth(maxWidthId, ...ids) {
-//    const width = document.getElementById(maxWidthId).clientWidth + 'px';
-//    ids.forEach(id => document.getElementById(id).style.width = width);
-//}
 
 function downloadPanels() {
     Promise.all(Object.values(Panels).map(name => fetchContent(`${name}.html`))).then(panels => handlePanels(panels))
@@ -201,17 +207,23 @@ function handleBetButton(event) {
             info.bet = 100;
             break;
     }
+    info.balance -= info.bet;
     updateInfo();
     dealTwoCards();
 }
 
 function showBetPanel() {
     state = State.BETTING;
-    document.getElementById('button-row').innerHTML = Panels.BET;
+    info.bet = '--';
+    info.win = '--';
+    info.spread = '--';
+    info.pays = '--';
+    updateInfo();
     document.getElementById('left-card').innerHTML = svgCards[BACK];
     document.getElementById('middle-card').innerHTML = '';
     document.getElementById('right-card').innerHTML = svgCards[BACK];
     document.getElementById('message').innerHTML = 'Place your bet:';
+    document.getElementById('button-row').innerHTML = Panels.BET;
     showBetButton(10);
     showBetButton(20);
     showBetButton(50);
@@ -227,6 +239,80 @@ function showBetButton(value) {
     }
 }
 
+function handleRaiseButton() {
+    info.balance -= info.bet;
+    info.bet *= 2;
+    updateInfo();
+    handleCallButton();
+}
+
+function handleCallButton() {
+    state = State.CONTINUING;
+    
+    let minCardValue;
+    let maxCardValue;
+    if (leftCardValue < rightCardValue) {
+        minCardValue = leftCardValue;
+        maxCardValue = rightCardValue;
+    } else {
+        minCardValue = rightCardValue;
+        maxCardValue = leftCardValue;
+    }
+    
+    const middleCardIndex = deck.next();
+    document.getElementById('middle-card').innerHTML = svgCards[middleCardIndex];
+    const middleCardValue = Math.floor(middleCardIndex / 4);
+    
+    if (middleCardValue > minCardValue && middleCardValue < maxCardValue) {
+        showContinuePanel(winPhrases.next());
+        switch (info.spread) {
+            case 1:
+                info.win = 6 * info.bet;
+                break;
+            case 2:
+                info.win = 5 * info.bet;
+                break;
+            case 3:
+                info.win = 3 * info.bet;
+                break;
+            default:
+                info.win = 2 * info.bet;
+                break;
+        }
+        info.balance += info.win;        
+    } else {
+        showContinuePanel(losePhrases.next());
+    }    
+    
+    updateInfo();
+}
+
+function showRaisePanel() {
+    state = State.RAISING;
+    document.getElementById('message').innerHTML = 'Raise your bet?';
+    document.getElementById('button-row').innerHTML = Panels.RAISE;
+    
+    const raiseButton = document.getElementById('raiseButton');
+    if (info.balance >= info.bet) {
+        raiseButton.addEventListener('click', handleRaiseButton);
+    } else {
+        raiseButton.disabled = true;
+    }
+    
+    document.getElementById('callButton').addEventListener('click', handleCallButton);
+}
+
+function handleContinueButton() {
+    showBetPanel();
+}
+
+function showContinuePanel(message) {
+    state = State.CONTINUING;
+    document.getElementById('message').innerHTML = message;
+    document.getElementById('button-row').innerHTML = Panels.CONTINUE;
+    document.getElementById('continueButton').addEventListener('click', handleContinueButton);
+}
+
 function dealTwoCards() {
     const leftCardIndex = deck.next();
     const rightCardIndex = deck.next();
@@ -234,51 +320,66 @@ function dealTwoCards() {
     document.getElementById('left-card').innerHTML = svgCards[leftCardIndex];
     document.getElementById('right-card').innerHTML = svgCards[rightCardIndex];
     
-    const leftCardValue = Math.floor(leftCardIndex / 4);
-    const rightCardValue = Math.floor(rightCardIndex / 4);
+    leftCardValue = Math.floor(leftCardIndex / 4);
+    rightCardValue = Math.floor(rightCardIndex / 4);
     const spread = Math.abs(leftCardValue - rightCardValue) - 1;
     
     switch (spread) {
-        case -1: {
+        case -1: {            
             const middleCardIndex = deck.next();
             document.getElementById('middle-card').innerHTML = svgCards[middleCardIndex];
             const middleCardValue = Math.floor(middleCardIndex / 4);
             if (leftCardValue === middleCardValue) {
                 info.spread = '3 of a Kind';
                 info.pays = '11:1';
+                info.win = 12 * info.bet;
+                showContinuePanel(winPhrases.next());
             } else {
                 info.spread = 'Pair';
                 info.pays = 'Push';
+                info.win = info.bet;
+                showContinuePanel(tiePhrases.next());
             }
+            info.balance += info.win;            
             break;
         }
         case 0:
             info.spread = 'Consecutive';
             info.pays = 'Push';
+            info.win = info.bet;
+            info.balance += info.win;
+            showContinuePanel(tiePhrases.next());
             break;
         case 1:
             info.spread = spread;
             info.pays = '5:1';
+            showRaisePanel();
             break;
         case 2:
             info.spread = spread;
             info.pays = '4:1';
+            showRaisePanel();
             break;
         case 3:
             info.spread = spread;
             info.pays = '2:1';
+            showRaisePanel();
             break;
         default:
             info.spread = spread;
             info.pays = 'Even Money';
+            showRaisePanel();
             break;
     }
     updateInfo();
 }
 
 function updateInfo() {
-    document.getElementById('info').innerHTML = `<p>Balance: ${info.balance}</p><p>Bet: ${info.bet}</p>`
-            + `<p>Win: ${info.win}</p><p>Spread: ${info.spread}</p><p>Pays: ${info.pays}</p>`;
+    document.getElementById('info').innerHTML = `<p>Balance: ${info.balance}</p>
+<p>Bet: ${info.bet}</p>
+<p>Win: ${info.win}</p>
+<p>Spread: ${info.spread}</p>
+<p>Pays: ${info.pays}</p>`;
 }
 
 function displayFatalError() {
