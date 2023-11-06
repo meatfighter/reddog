@@ -188,13 +188,13 @@ function handleCards(cards) {
 
 function handleBetButton(event) {
     switch (event.target.id) {
-        case '10button':
+        case 'button10':
             info.bet = 10;
             break;
-        case '20button':
+        case 'button20':
             info.bet = 20;
             break;
-        case '50button':
+        case 'button50':
             info.bet = 50;
             break;
         default:
