@@ -219,7 +219,7 @@ function showBetPanel() {
 }
 
 function showBetButton(value) {    
-    const button = document.getElementById(`${value}button`);
+    const button = document.getElementById(`button${value}`);
     if (info.balance < value) {
         button.disabled = true;
     } else {
