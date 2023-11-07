@@ -124,8 +124,8 @@ const State = {
     CONTINUING: 2
 };
 
-const MAX_LEFT_CARD_WIDTH = 249.4492188;
-const MAX_RIGHT_CARD_WIDTH = 222.78255213333333333333333333333;
+const MAX_SIDE_CARD_WIDTH = 249.4492188;
+const MAX_MIDDLE_CARD_WIDTH = 222.78255213333333333333333333333;
 const MAX_CARD_HEIGHT = 323.5559896;
 
 const CARD_FLIP_MILLIS = 250;
@@ -151,7 +151,8 @@ let rightCardValue;
 
 let displayWideInfo = false;
 let cardScale = 1.0;
-let cardTranslateX = 0;
+let leftCardTranslateX = 0;
+let rightCardTranslateX = MAX_SIDE_CARD_WIDTH - MAX_MIDDLE_CARD_WIDTH;
 let cardTranslateY = 0;
 
 async function fetchContent(url, options = {}, responseType = 'text') {
@@ -516,17 +517,22 @@ function handleWindowResized(_) {
     const message = document.getElementById('message');
     const buttonRow = document.getElementById('button-row');
     
+    cardScale = 1;
+    leftCardTranslateX = 0;
+    rightCardTranslateX = MAX_SIDE_CARD_WIDTH - MAX_MIDDLE_CARD_WIDTH;
+    cardTranslateY = 0;
+    
     const maxCardPxHeight = `${MAX_CARD_HEIGHT}px`;
     leftCard.style.height = maxCardPxHeight;
     middleCard.style.height = maxCardPxHeight;
     rightCard.style.height = maxCardPxHeight;
     leftCard.style.transform = '';
     middleCard.style.transform = '';
-    rightCard.style.transform = '';
+    rightCard.style.transform = `translateX(${rightCardTranslateX}px)`;
     
     if (main.clientHeight > window.innerHeight) {
         const cardHeight = Math.max(window.innerHeight - infoElement.clientHeight - message.clientHeight 
-                - buttonRow.clientHeight - 40, 0.25 * MAX_CARD_HEIGHT);
+                - buttonRow.clientHeight - 40, 0.2 * MAX_CARD_HEIGHT);
         
         const cardPxHeight = `${cardHeight}px`;
         leftCard.style.height = cardPxHeight;
@@ -534,11 +540,15 @@ function handleWindowResized(_) {
         rightCard.style.height = cardPxHeight;
         
         cardScale = Math.min(1, cardHeight / MAX_CARD_HEIGHT);
-        leftCardWidth = MAX_LEFT_CARD_WIDTH * cardScale;
-        rightCardWidth = MAX_RIGHT_CARD_WIDTH * cardScale;
-        leftCardTranslateX = MAX_LEFT_CARD_WIDTH - leftCardWidth;
-        rightCardTranslateX = rightCardWidth - MAX_RIGHT_CARD_WIDTH;
+        
+        const middleCardWidth = MAX_MIDDLE_CARD_WIDTH * cardScale;
+               
+        leftCardTranslateX = (MAX_SIDE_CARD_WIDTH * (1 - cardScale)) 
+                * Math.sqrt(MAX_MIDDLE_CARD_WIDTH / MAX_SIDE_CARD_WIDTH);
+        rightCardTranslateX = (MAX_SIDE_CARD_WIDTH - MAX_MIDDLE_CARD_WIDTH) * cardScale - leftCardTranslateX;
+        
         cardTranslateY = (cardHeight - MAX_CARD_HEIGHT) / 2;
+        
         leftCard.style.transform 
                 = `translateX(${leftCardTranslateX}px) scale(${cardScale}) translateY(${cardTranslateY}px)`;
         middleCard.style.transform = `scale(${cardScale}) translateY(${cardTranslateY}px)`;
@@ -548,6 +558,28 @@ function handleWindowResized(_) {
     
     if (main.clientWidth > window.innerWidth) {
         
+        cardScale = Math.min(cardScale, window.innerWidth / (2 * MAX_SIDE_CARD_WIDTH + MAX_MIDDLE_CARD_WIDTH));
+        
+        const cardHeight = MAX_CARD_HEIGHT * cardScale;
+        
+        const cardPxHeight = `${cardHeight}px`;
+        leftCard.style.height = cardPxHeight;
+        middleCard.style.height = cardPxHeight;
+        rightCard.style.height = cardPxHeight;
+        
+        const middleCardWidth = MAX_MIDDLE_CARD_WIDTH * cardScale;
+               
+        leftCardTranslateX = (MAX_SIDE_CARD_WIDTH * (1 - cardScale)) 
+                * Math.sqrt(MAX_MIDDLE_CARD_WIDTH / MAX_SIDE_CARD_WIDTH);
+        rightCardTranslateX = (MAX_SIDE_CARD_WIDTH - MAX_MIDDLE_CARD_WIDTH) * cardScale - leftCardTranslateX;
+        
+        cardTranslateY = (cardHeight - MAX_CARD_HEIGHT) / 2;
+        
+        leftCard.style.transform 
+                = `translateX(${leftCardTranslateX}px) scale(${cardScale}) translateY(${cardTranslateY}px)`;
+        middleCard.style.transform = `scale(${cardScale}) translateY(${cardTranslateY}px)`;
+        rightCard.style.transform 
+                = `translateX(${rightCardTranslateX}px) scale(${cardScale}) translateY(${cardTranslateY}px)`;
     }
 }
 

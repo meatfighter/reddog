@@ -58,12 +58,12 @@ body {
     align-items: center;
 }
 
-.left-card {
+.side-card {
     width: 249.4492188px;
     height: 323.5559896px;
 }
 
-.right-card {
+.middle-card {
     width: 222.78255213333333333333333333333px;
     height: 323.5559896px;
 }
