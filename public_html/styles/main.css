@@ -4,6 +4,7 @@ body {
     margin: 0;
     padding: 0;
     font-family: 'Open Sans', sans-serif;
+    overflow: hidden;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 }
@@ -58,13 +59,13 @@ body {
 }
 
 .left-card {
-    width: 187.0869141pt;
-    height: 242.6669922pt;
+    width: 249.4492188px;
+    height: 323.5559896px;
 }
 
 .right-card {
-    width: 167.0869141pt;
-    height: 242.6669922pt;
+    width: 222.78255213333333333333333333333px;
+    height: 323.5559896px;
 }
 
 .button-row {

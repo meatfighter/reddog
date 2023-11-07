@@ -28,6 +28,12 @@ class ArrayShuffler {
 const winPhrases = new ArrayShuffler([
     'Congratulations!',
     'Congrats!',
+    'Great!',
+    'Good stuff!',
+    'Awesome!',
+    'We have a winner!',
+    'Winner!',
+    'Win!',
     'Winner, winner, chicken dinner!',
     'You\'ve done it!',
     'You did it!',
@@ -75,6 +81,9 @@ const tiePhrases = new ArrayShuffler([
 ]);
 
 const losePhrases = new ArrayShuffler([
+    'Ugh.',
+    'Doh!',
+    'Yipe!',
     'Better luck next time.',
     'Unlucky hand.',
     'Tough break.',
@@ -115,6 +124,10 @@ const State = {
     CONTINUING: 2
 };
 
+const MAX_LEFT_CARD_WIDTH = 249.4492188;
+const MAX_RIGHT_CARD_WIDTH = 222.78255213333333333333333333333;
+const MAX_CARD_HEIGHT = 323.5559896;
+
 const CARD_FLIP_MILLIS = 250;
 
 const MAX_FETCH_RETRIES = 5;
@@ -135,6 +148,11 @@ let state;
 let svgCards;
 let leftCardValue;
 let rightCardValue;
+
+let displayWideInfo = false;
+let cardScale = 1.0;
+let cardTranslateX = 0;
+let cardTranslateY = 0;
 
 async function fetchContent(url, options = {}, responseType = 'text') {
     for (let i = MAX_FETCH_RETRIES - 1; i >= 0; --i) {
@@ -238,6 +256,8 @@ function showBetPanel() {
     showBetButton(20);
     showBetButton(50);
     showBetButton(100);
+    
+    handleWindowResized();
 }
 
 function showBetButton(value) {    
@@ -321,6 +341,8 @@ function showRaisePanel() {
     }
     
     document.getElementById('callButton').addEventListener('click', handleCallButton);
+    
+    handleWindowResized();
 }
 
 function handleContinueButton() {
@@ -338,6 +360,8 @@ function showContinuePanel(msg) {
     buttonRow.style.visibility = 'visible';    
     
     document.getElementById('continueButton').addEventListener('click', handleContinueButton);
+    
+    handleWindowResized();
 }
 
 async function flipCardOver(elementName, cardIndex) {
@@ -363,7 +387,20 @@ async function flipCardOver(elementName, cardIndex) {
                 }
                 scale = -scale;
             }
-            element.style.transform = `scaleX(${scale})`;
+            switch (elementName) {
+                case 'left-card':
+                    element.style.transform = `translateX(${leftCardTranslateX}px) scaleX(${scale * cardScale}) `
+                            + `scaleY(${cardScale}) translateY(${cardTranslateY}px)`;
+                    break;
+                case 'middle-card':
+                    element.style.transform = `scaleX(${scale * cardScale}) scaleY(${cardScale}) `
+                            + `translateY(${cardTranslateY}px)`;
+                    break;
+                default:
+                    element.style.transform = `translateX(${rightCardTranslateX}px) scaleX(${scale * cardScale}) `
+                            + `scaleY(${cardScale}) translateY(${cardTranslateY}px)`;
+                    break;
+            }            
             
             if (fraction < 1) {
                 requestAnimationFrame(animate);
@@ -440,18 +477,82 @@ async function dealTwoCards() {
 }
 
 function updateInfo() {
-    document.getElementById('info').innerHTML = `<p>Balance: ${info.balance}</p>
+    const element = document.getElementById('info');
+    if (displayWideInfo) {
+        element.innerHTML = `<p>Balance: ${info.balance}, Bet: ${info.bet}, Win: ${info.win}, ` 
+                + `Spread: ${info.spread}, Pays: ${info.pays}</p>`;
+    } else {
+        element.innerHTML = `<p>Balance: ${info.balance}</p>
 <p>Bet: ${info.bet}</p>
 <p>Win: ${info.win}</p>
 <p>Spread: ${info.spread}</p>
 <p>Pays: ${info.pays}</p>`;
+    }
 }
 
 function displayFatalError() {
     document.getElementById('main-content').innerHTML = '<span id="fatal-error">&#x1F480;</span>';
 }
 
+function handleWindowResized(_) {
+    
+    const main = document.getElementById('main-container');
+    
+    const infoElement = document.getElementById('info');
+    
+    displayWideInfo = false;
+    infoElement.style.marginBottom = '20px';
+    updateInfo();
+    
+    if (main.clientHeight > window.innerHeight) {
+        displayWideInfo = true;
+        infoElement.style.marginBottom = '0px';
+        updateInfo();
+    } 
+    
+    const leftCard = document.getElementById('left-card');
+    const middleCard = document.getElementById('middle-card');
+    const rightCard = document.getElementById('right-card');
+    const message = document.getElementById('message');
+    const buttonRow = document.getElementById('button-row');
+    
+    const maxCardPxHeight = `${MAX_CARD_HEIGHT}px`;
+    leftCard.style.height = maxCardPxHeight;
+    middleCard.style.height = maxCardPxHeight;
+    rightCard.style.height = maxCardPxHeight;
+    leftCard.style.transform = '';
+    middleCard.style.transform = '';
+    rightCard.style.transform = '';
+    
+    if (main.clientHeight > window.innerHeight) {
+        const cardHeight = Math.max(window.innerHeight - infoElement.clientHeight - message.clientHeight 
+                - buttonRow.clientHeight - 40, 0.25 * MAX_CARD_HEIGHT);
+        
+        const cardPxHeight = `${cardHeight}px`;
+        leftCard.style.height = cardPxHeight;
+        middleCard.style.height = cardPxHeight;
+        rightCard.style.height = cardPxHeight;
+        
+        cardScale = Math.min(1, cardHeight / MAX_CARD_HEIGHT);
+        leftCardWidth = MAX_LEFT_CARD_WIDTH * cardScale;
+        rightCardWidth = MAX_RIGHT_CARD_WIDTH * cardScale;
+        leftCardTranslateX = MAX_LEFT_CARD_WIDTH - leftCardWidth;
+        rightCardTranslateX = rightCardWidth - MAX_RIGHT_CARD_WIDTH;
+        cardTranslateY = (cardHeight - MAX_CARD_HEIGHT) / 2;
+        leftCard.style.transform 
+                = `translateX(${leftCardTranslateX}px) scale(${cardScale}) translateY(${cardTranslateY}px)`;
+        middleCard.style.transform = `scale(${cardScale}) translateY(${cardTranslateY}px)`;
+        rightCard.style.transform 
+                = `translateX(${rightCardTranslateX}px) scale(${cardScale}) translateY(${cardTranslateY}px)`;
+    }
+    
+    if (main.clientWidth > window.innerWidth) {
+        
+    }
+}
+
 function init() {
+    window.addEventListener('resize', handleWindowResized);    
     downloadPanels();
 }
 
