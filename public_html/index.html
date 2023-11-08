@@ -8,7 +8,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#B39472">
 
-<link rel="stylesheet" href="styles/main.css?v=2023-11-08" type="text/css">
+<link rel="stylesheet" href="styles/index.css?v=2023-11-08" type="text/css">
 <link rel="manifest" href="manifest.json">
 <link rel="mask-icon" href="mask-icon.svg" color="#000000">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -17,7 +17,7 @@
 <link rel="shortcut icon" href="favicon.ico" sizes="any" type="image/x-icon">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Open+Sans&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans&family=Reem+Kufi+Fun:wght@500&display=swap" rel="stylesheet">
 
 <title>Red Dog</title>
 
@@ -25,13 +25,29 @@
 
 <body>
 
-<main id="main-content"></main>    
-    
-<script src="scripts/main.js"></script>
+<p class="title">Red Dog</p>
+
+<p><img class="centered" src="red-dog.svg" id="red-dog" alt="Red Dog"></p>
+
+<button class="button" id="playButton">Play</button>
+
+<p>Red Dog is a game of chance played with a shuffled deck of cards. The player starts by placing a bet. Then the dealer deals two cards face-up with following outcomes:</p>
+
+<ul>
+<li><p>Pair (e.g., two 8s): The dealer deals a third card. If the rank of the third card is same as the first two, the player receives a payout of 11:1&mdash;meaning the player wins eleven times the bet, plus the bet is returned. Otherwise, the hand is a push, and the player's bet is returned.</p></li>
+
+<li><p>Consecutive ranks (e.g. 8 and 9, or 9 and 8): The hand is a push, and the player's bet is returned.</p></li>
+
+<li><p>Neither a pair nor consecutive ranks: The player either raises (doubles the bet) or calls (continues with the original bet). Then the dealer deals a third card face-up. If the third card is not in-between the first two cards (i.e., it matches one of the first two cards or it is out of range), the player loses the bet. Otherwise, the player receives a payout.</p>
+
+<p>The payout is determined by the &ldquo;spread&rdquo;, the number of ranks between the first two cards. For example, if dealer initially deals the seven-of-clubs and the four-of-hearts, then the spread is 2 because 5 and 6 fall between 4 and 7. The face cards&mdash;jack, queen, king, and ace&mdash;are ranked 11, 12, 13, and 14, respectively. A spread of 1, 2, or 3 yields a payout of 5:1, 4:1, or 2:1, respectively&mdash;meaning the player wins five, four, or two times the bet, plus the bet is returned. Spreads greater than 3 yield &ldquo;even money&rdquo;&mdash;meaning the player wins a value equal to the bet, plus the bet is returned.</p></li>
+</ul>
+
+<hr>
+<table class="copyright">
+<tr><td><p class="copyright">&copy; 2023 meatfighter.com<br>This content is licensed under <a href="http://creativecommons.org/licenses/by-sa/4.0/?ref=chooser-v1" target="_blank" rel="license noopener noreferrer" style="display:inline-block;">CC BY-SA 4.0<img style="height:22px!important;margin-left:3px;vertical-align:text-bottom;" src="https://mirrors.creativecommons.org/presskit/icons/cc.svg?ref=chooser-v1" alt="CC"><img style="height:22px!important;margin-left:3px;vertical-align:text-bottom;" src="https://mirrors.creativecommons.org/presskit/icons/by.svg?ref=chooser-v1" alt="BY"><img style="height:22px!important;margin-left:3px;vertical-align:text-bottom;" src="https://mirrors.creativecommons.org/presskit/icons/sa.svg?ref=chooser-v1" alt="SA"></a></p></td><td><p class="home"><a href="https://github.com/meatfighter/reddog">Source</a> | <a href="https://meatfighter.com">Home</a></p></td></tr>
+</table>
+
 </body>
 
 </html>
-
-
-
-
