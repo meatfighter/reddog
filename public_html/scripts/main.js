@@ -497,6 +497,17 @@ function displayFatalError() {
 
 function handleWindowResized(_) {
     
+    const viewportWidth = window.innerWidth && document.documentElement.clientWidth ? 
+            Math.min(window.innerWidth, document.documentElement.clientWidth) : 
+            window.innerWidth || 
+            document.documentElement.clientWidth || 
+            document.getElementsByTagName('body')[0].clientWidth;
+    const viewportHeight = window.innerHeight && document.documentElement.clientHeight ? 
+            Math.min(window.innerHeight, document.documentElement.clientHeight) : 
+            window.innerHeight || 
+            document.documentElement.clientHeight || 
+            document.getElementsByTagName('body')[0].clientHeight;    
+    
     const main = document.getElementById('main-container');
     
     const infoElement = document.getElementById('info');
@@ -505,7 +516,7 @@ function handleWindowResized(_) {
     infoElement.style.marginBottom = '20px';
     updateInfo();
     
-    if (main.clientHeight > window.innerHeight) {
+    if (main.clientHeight > viewportHeight) {
         displayWideInfo = true;
         infoElement.style.marginBottom = '0px';
         updateInfo();
@@ -530,8 +541,8 @@ function handleWindowResized(_) {
     middleCard.style.transform = '';
     rightCard.style.transform = `translateX(${rightCardTranslateX}px)`;
     
-    if (main.clientHeight > window.innerHeight) {
-        const cardHeight = Math.max(window.innerHeight - infoElement.clientHeight - message.clientHeight 
+    if (main.clientHeight > viewportHeight) {
+        const cardHeight = Math.max(viewportHeight - infoElement.clientHeight - message.clientHeight 
                 - buttonRow.clientHeight - 40, 0.2 * MAX_CARD_HEIGHT);
         
         const cardPxHeight = `${cardHeight}px`;
@@ -556,9 +567,9 @@ function handleWindowResized(_) {
                 = `translateX(${rightCardTranslateX}px) scale(${cardScale}) translateY(${cardTranslateY}px)`;
     }
     
-    if (main.clientWidth > window.innerWidth) {
+    if (main.clientWidth > viewportWidth) {
         
-        cardScale = Math.min(cardScale, window.innerWidth / (2 * MAX_SIDE_CARD_WIDTH + MAX_MIDDLE_CARD_WIDTH));
+        cardScale = Math.min(cardScale, viewportWidth / (2 * MAX_SIDE_CARD_WIDTH + MAX_MIDDLE_CARD_WIDTH));
         
         const cardHeight = MAX_CARD_HEIGHT * cardScale;
         
