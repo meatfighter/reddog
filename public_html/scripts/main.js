@@ -137,7 +137,7 @@ const BACK = 52;
 const deck = new ArrayShuffler(Array.from({ length: 52 }, (_, index) => index), 49);
 
 const info = {
-    balance: 10000,
+    balance: 1500,
     bet: '--',
     win: '--',
     spread: '--',
