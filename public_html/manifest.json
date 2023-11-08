@@ -1,0 +1,18 @@
+{
+    "short_name": "Red Dog",
+    "name": "Red Dog",    
+    "icons": [
+        {
+            "src": "google-touch-icon-192.png",
+            "sizes": "192x192"
+        },    
+        {
+            "src": "google-touch-icon-512.png",
+            "sizes": "512x512"
+        }
+    ],
+    "start_url": "/index.html",
+    "background_color": "#B39472",
+    "theme_color": "#B39472",
+    "display": "fullscreen"
+}
