@@ -513,6 +513,8 @@ function getViewportHeight() {
 
 function handleWindowResized() { 
     
+/*
+    
     const main = document.getElementById('main-container');
     const infoElement = document.getElementById('info');  
     
@@ -606,7 +608,7 @@ function handleWindowResized() {
         displayWideInfo = true;
         infoElement.style.marginBottom = '0px';
         updateInfo();
-    }    
+    }    */
 }
 
 function init() {
