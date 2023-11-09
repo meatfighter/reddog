@@ -63,7 +63,7 @@ body {
 .row-container {
     display: flex;
     flex-direction: row;
-    align-items: center;
+    align-items: center;  
 }
 
 .column-container {
@@ -74,12 +74,12 @@ body {
 
 .side-card {
     width: 249.4492188px;
-    height: 323.5559896px;
+    height: 323.5559896px;    
 }
 
 .middle-card {
     width: 222.78255213333333333333333333333px;
-    height: 323.5559896px;
+    height: 323.5559896px;    
 }
 
 .button-row {
