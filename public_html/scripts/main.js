@@ -511,20 +511,10 @@ function getViewportHeight() {
             document.getElementsByTagName('body')[0].clientHeight;
 }
 
-function handleWindowResized() {  
+function handleWindowResized() { 
     
     const main = document.getElementById('main-container');
-    const html = main.innerHTML;
-    main.innerHTML = '';
-    requestAnimationFrame(() => handleWindowResized2(main, html));
-}
-    
-function handleWindowResized2(main, html) {
-
-    main.innerHTML = html;
-    const forceReflow = main.offsetHeight;
-    
-    const infoElement = document.getElementById('info');
+    const infoElement = document.getElementById('info');  
     
     displayWideInfo = false;
     infoElement.style.marginBottom = '20px';
@@ -551,6 +541,7 @@ function handleWindowResized2(main, html) {
     leftCard.style.height = maxCardPxHeight;
     middleCard.style.height = maxCardPxHeight;
     rightCard.style.height = maxCardPxHeight;
+    
     leftCard.style.transform = '';
     middleCard.style.transform = '';
     rightCard.style.transform = `translateX(${rightCardTranslateX}px)`;
@@ -559,12 +550,12 @@ function handleWindowResized2(main, html) {
         const cardHeight = Math.max(getViewportHeight() - infoElement.clientHeight - message.clientHeight 
                 - buttonRow.clientHeight - 40, 0.2 * MAX_CARD_HEIGHT);
         
+        cardScale = Math.min(1, cardHeight / MAX_CARD_HEIGHT);
+        
         const cardPxHeight = `${cardHeight}px`;
         leftCard.style.height = cardPxHeight;
         middleCard.style.height = cardPxHeight;
         rightCard.style.height = cardPxHeight;
-        
-        cardScale = Math.min(1, cardHeight / MAX_CARD_HEIGHT);
         
         const middleCardWidth = MAX_MIDDLE_CARD_WIDTH * cardScale;
                
