@@ -511,7 +511,14 @@ function getViewportHeight() {
             document.getElementsByTagName('body')[0].clientHeight;
 }
 
-function handleWindowResized(_) {  
+function handleWindowOrientationChanged() {
+    const main = document.getElementById('main-content');
+    main.innerHTML = '';
+    main.innerHTML = Panels.MAIN;
+    handleWindowResized();
+}
+
+function handleWindowResized() {  
     
     const main = document.getElementById('main-container');
     
@@ -611,7 +618,7 @@ function handleWindowResized(_) {
 
 function init() {
     window.addEventListener('resize', handleWindowResized);
-    window.addEventListener('orientationchange', handleWindowResized);
+    window.addEventListener('orientationchange', handleWindowOrientationChanged);
     downloadPanels();
 }
 
