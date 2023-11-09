@@ -525,7 +525,13 @@ function handleWindowResized(_) {
         displayWideInfo = true;
         infoElement.style.marginBottom = '0px';
         updateInfo();
-    } 
+    }
+    
+    if (main.clientWidth > getViewportWidth()) {
+        displayWideInfo = false;
+        infoElement.style.marginBottom = '20px';
+        updateInfo();
+    }    
     
     const leftCard = document.getElementById('left-card');
     const middleCard = document.getElementById('middle-card');
