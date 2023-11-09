@@ -595,7 +595,8 @@ function handleWindowResized(_) {
 }
 
 function init() {
-    window.addEventListener('resize', handleWindowResized);    
+    window.addEventListener('resize', handleWindowResized);
+    window.addEventListener('orientationchange', handleWindowResized);
     downloadPanels();
 }
 
