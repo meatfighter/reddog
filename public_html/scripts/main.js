@@ -242,9 +242,9 @@ function showBetPanel() {
     info.spread = '--';
     info.pays = '--';
     updateInfo();
-    document.getElementById('left-card').innerHTML = svgCards[BACK];
-    document.getElementById('middle-card').innerHTML = '';
-    document.getElementById('right-card').innerHTML = svgCards[BACK];
+//    document.getElementById('left-card').innerHTML = svgCards[BACK];
+//    document.getElementById('middle-card').innerHTML = '';
+//    document.getElementById('right-card').innerHTML = svgCards[BACK];
         
     const message = document.getElementById('message');
     message.innerHTML = 'Place your bet:';
@@ -384,7 +384,7 @@ async function flipCardOver(elementName, cardIndex) {
             if (scale < 0) {
                 if (back) {
                     back = false;
-                    element.innerHTML = svgCards[cardIndex];
+//                    element.innerHTML = svgCards[cardIndex];
                 }
                 scale = -scale;
             }
@@ -542,9 +542,9 @@ function handleWindowResized() {
     middleCard.style.height = maxCardPxHeight;
     rightCard.style.height = maxCardPxHeight;
     
-    leftCard.style.transform = '';
-    middleCard.style.transform = '';
-    rightCard.style.transform = `translateX(${rightCardTranslateX}px)`;
+//    leftCard.style.transform = '';
+//    middleCard.style.transform = '';
+//    rightCard.style.transform = `translateX(${rightCardTranslateX}px)`;
     
     if (main.clientHeight > getViewportHeight()) {
         const cardHeight = Math.max(getViewportHeight() - infoElement.clientHeight - message.clientHeight 
@@ -565,11 +565,11 @@ function handleWindowResized() {
         
         cardTranslateY = (cardHeight - MAX_CARD_HEIGHT) / 2;
         
-        leftCard.style.transform 
-                = `translateX(${leftCardTranslateX}px) scale(${cardScale}) translateY(${cardTranslateY}px)`;
-        middleCard.style.transform = `scale(${cardScale}) translateY(${cardTranslateY}px)`;
-        rightCard.style.transform 
-                = `translateX(${rightCardTranslateX}px) scale(${cardScale}) translateY(${cardTranslateY}px)`;
+//        leftCard.style.transform 
+//                = `translateX(${leftCardTranslateX}px) scale(${cardScale}) translateY(${cardTranslateY}px)`;
+//        middleCard.style.transform = `scale(${cardScale}) translateY(${cardTranslateY}px)`;
+//        rightCard.style.transform 
+//                = `translateX(${rightCardTranslateX}px) scale(${cardScale}) translateY(${cardTranslateY}px)`;
     }
     
     if (main.clientWidth > getViewportWidth()) {
@@ -591,11 +591,11 @@ function handleWindowResized() {
         
         cardTranslateY = (cardHeight - MAX_CARD_HEIGHT) / 2;
         
-        leftCard.style.transform 
-                = `translateX(${leftCardTranslateX}px) scale(${cardScale}) translateY(${cardTranslateY}px)`;
-        middleCard.style.transform = `scale(${cardScale}) translateY(${cardTranslateY}px)`;
-        rightCard.style.transform 
-                = `translateX(${rightCardTranslateX}px) scale(${cardScale}) translateY(${cardTranslateY}px)`;
+//        leftCard.style.transform 
+//                = `translateX(${leftCardTranslateX}px) scale(${cardScale}) translateY(${cardTranslateY}px)`;
+//        middleCard.style.transform = `scale(${cardScale}) translateY(${cardTranslateY}px)`;
+//        rightCard.style.transform 
+//                = `translateX(${rightCardTranslateX}px) scale(${cardScale}) translateY(${cardTranslateY}px)`;
     }
     
     displayWideInfo = false;
@@ -610,8 +610,8 @@ function handleWindowResized() {
 }
 
 function init() {
-    window.addEventListener('resize', handleWindowResized);
-    window.addEventListener('orientationchange', handleWindowResized);
+//    window.addEventListener('resize', handleWindowResized);
+//    window.addEventListener('orientationchange', handleWindowResized);
     downloadPanels();
 }
 
