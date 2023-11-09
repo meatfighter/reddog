@@ -515,7 +515,14 @@ function handleWindowResized() {
     
     const main = document.getElementById('main-container');
     const html = main.innerHTML;
+    main.innerHTML = '';
+    requestAnimationFrame(() => handleWindowResized2(main, html));
+}
+    
+function handleWindowResized2(main, html) {
+
     main.innerHTML = html;
+    const forceReflow = main.offsetHeight;
     
     const infoElement = document.getElementById('info');
     
