@@ -527,12 +527,6 @@ function handleWindowResized(_) {
         updateInfo();
     }
     
-    if (main.clientWidth > getViewportWidth()) {
-        displayWideInfo = false;
-        infoElement.style.marginBottom = '20px';
-        updateInfo();
-    }    
-    
     const leftCard = document.getElementById('left-card');
     const middleCard = document.getElementById('middle-card');
     const rightCard = document.getElementById('right-card');
@@ -603,6 +597,16 @@ function handleWindowResized(_) {
         rightCard.style.transform 
                 = `translateX(${rightCardTranslateX}px) scale(${cardScale}) translateY(${cardTranslateY}px)`;
     }
+    
+    displayWideInfo = false;
+    infoElement.style.marginBottom = '20px';
+    updateInfo();
+    
+    if (main.clientHeight > getViewportHeight()) {
+        displayWideInfo = true;
+        infoElement.style.marginBottom = '0px';
+        updateInfo();
+    }    
 }
 
 function init() {
