@@ -39,6 +39,15 @@ class CardState {
         this.#index = index;
     }
     
+    deal(backSide) {        
+        this.#cardIndex = deck.next();
+        this.#cardRank = Math.floor(this.#cardIndex / 4);
+        this.#visible = backSide;
+        this.#flipFraction = 0;
+        this.#backSide = backSide;
+        this.#changed = true;
+    }
+    
     get index() {
         return this.#index;
     }
@@ -46,13 +55,7 @@ class CardState {
     get cardIndex() {
         return this.#cardIndex;
     }
-    
-    set cardIndex(cardIndex) {
-        this.#changed = true;
-        this.#cardIndex = cardIndex;
-        this.#cardRank = Math.floor(cardIndex / 4);
-    }
-    
+        
     get cardRank() {
         return this.#cardRank; 
     }
@@ -64,6 +67,10 @@ class CardState {
     
     get visible() {
         return this.#visible;
+    }
+    
+    get backSide() {
+        return this.#backSide;
     }
     
     set backSide(backSide) {
@@ -193,6 +200,9 @@ const CARD_FLIP_MILLIS = 250;
 
 const MAX_FETCH_RETRIES = 5;
 
+const LEFT = 0;
+const MIDDLE = 1;
+const RIGHT = 2;
 const BACK = 52;
 
 const deck = new ArrayShuffler(Array.from({ length: 52 }, (_, index) => index), 49);
@@ -210,10 +220,18 @@ let cardImages;
 let cardStates = Array.from({ length: 3 }, (_, index) => new CardState(index));
 let displayWideInfo = false;
 
+function initCanvas() {
+    const canvas = document.getElementById('cards-canvas');
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = window.getComputedStyle(document.body).backgroundColor;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+}
+
 function renderCards() {
     const ctx = document.getElementById('cards-canvas').getContext('2d');
-    ctx.fillStyle = document.body.style.backgroundColor;
+    ctx.fillStyle = window.getComputedStyle(document.body).backgroundColor;
     cardStates.forEach(cardState => renderCard(ctx, cardState));
+    return ctx;
 }
 
 function renderCard(ctx, cardState) {
@@ -237,8 +255,9 @@ function renderCard(ctx, cardState) {
         return;
     }
     
-    ctx.drawImage(image, x + MAX_CARD_WIDTH / 2 - MAX_CARD_WIDTH, 0, 
-            MAX_CARD_WIDTH * Math.abs(Math.cos(Math.PI * cardState.flipFraction)), MAX_CARD_HEIGHT);
+    const width = MAX_CARD_WIDTH * Math.abs(Math.cos(Math.PI * cardState.flipFraction));
+    
+    ctx.drawImage(image, x + (MAX_CARD_WIDTH - width) / 2, 0, width, MAX_CARD_HEIGHT);
 }
 
 async function fetchContent(url, options = {}, responseType = 'text') {
@@ -312,7 +331,8 @@ function downloadCards() {
 function handleCards(cards) {
     cardImages = cards;
     document.getElementById('main-content').innerHTML = Panels.MAIN;
-    updateInfo();
+    initCanvas();
+    updateInfo();    
     showBetPanel();
 }
 
@@ -346,21 +366,10 @@ function showBetPanel() {
     info.pays = '--';
     updateInfo();
     
-    
-    const canvas = document.getElementById('cards-canvas');
-    const ctx = canvas.getContext('2d');
-    //ctx.drawImage(cardImages[0], 0, 0, 100, 100);
-    ctx.fillRect(0, 0, 720, 325);
-    ctx.strokeStyle = 'white';
-    ctx.moveTo(0, 0);
-    ctx.lineTo(720, 325);
-    ctx.stroke();
-    
-    
-    
-//    document.getElementById('left-card').innerHTML = svgCards[BACK];
-//    document.getElementById('middle-card').innerHTML = '';
-//    document.getElementById('right-card').innerHTML = svgCards[BACK];
+    cardStates[LEFT].deal(true);
+    cardStates[MIDDLE].visible = false;
+    cardStates[RIGHT].deal(true);
+    renderCards();
         
     const message = document.getElementById('message');
     message.innerHTML = 'Place your bet:';
@@ -402,21 +411,19 @@ async function handleCallButton() {
     
     let minCardValue;
     let maxCardValue;
-    if (leftCardValue < rightCardValue) {
-        minCardValue = leftCardValue;
-        maxCardValue = rightCardValue;
+    if (cardStates[LEFT].cardRank < cardStates[RIGHT].cardRank) {
+        minCardValue = cardStates[LEFT].cardRank;
+        maxCardValue = cardStates[RIGHT].cardRank;
     } else {
-        minCardValue = rightCardValue;
-        maxCardValue = leftCardValue;
+        minCardValue = cardStates[RIGHT].cardRank;
+        maxCardValue = cardStates[LEFT].cardRank;
     }
     
-    const middleCardIndex = deck.next();
+    cardStates[MIDDLE].deal(false);
     
-    await await flipCardOver('middle-card', middleCardIndex);
+    await await flipCardOver(cardStates[MIDDLE]);
     
-    const middleCardValue = Math.floor(middleCardIndex / 4);
-    
-    if (middleCardValue > minCardValue && middleCardValue < maxCardValue) {
+    if (cardStates[MIDDLE].cardRank > minCardValue && cardStates[MIDDLE].cardRank < maxCardValue) {
         showContinuePanel(winPhrases.next());
         switch (info.spread) {
             case 1:
@@ -481,47 +488,28 @@ function showContinuePanel(msg) {
     handleWindowResized();
 }
 
-async function flipCardOver(elementName, cardIndex) {
+async function flipCardOver(cardState) {
     
-    const element = document.getElementById(elementName);
+    const ctx = renderCards();
     
     return new Promise(resolve => {
         
         let startTime;
-        let back = true;
         
         function animate(currentTime) {
             if (!startTime) {
                 startTime = currentTime;
             }
-            const elapsedTime = currentTime - startTime;
-            const fraction = Math.min(elapsedTime / CARD_FLIP_MILLIS, 1);
-            let scale = Math.cos(Math.PI * fraction);
-            if (scale < 0) {
-                if (back) {
-                    back = false;
-//                    element.innerHTML = svgCards[cardIndex];
-                }
-                scale = -scale;
-            }
-            switch (elementName) {
-                case 'left-card':
-                    element.style.transform = `translateX(${leftCardTranslateX}px) scaleX(${scale * cardScale}) `
-                            + `scaleY(${cardScale}) translateY(${cardTranslateY}px)`;
-                    break;
-                case 'middle-card':
-                    element.style.transform = `scaleX(${scale * cardScale}) scaleY(${cardScale}) `
-                            + `translateY(${cardTranslateY}px)`;
-                    break;
-                default:
-                    element.style.transform = `translateX(${rightCardTranslateX}px) scaleX(${scale * cardScale}) `
-                            + `scaleY(${cardScale}) translateY(${cardTranslateY}px)`;
-                    break;
-            }            
             
-            if (fraction < 1) {
+            cardState.flipFraction = Math.min((currentTime - startTime) / CARD_FLIP_MILLIS, 1);
+            cardState.backSide = (cardState.flipFraction < 0.5);
+            cardState.visible |= !cardState.backSide;
+            
+            renderCard(ctx, cardState);
+            
+            if (cardState.flipFraction < 1) {
                 requestAnimationFrame(animate);
-            } else {
+            } else {                
                 resolve();
             }
         }
@@ -531,24 +519,19 @@ async function flipCardOver(elementName, cardIndex) {
 }
 
 async function dealTwoCards() {
-    const leftCardIndex = deck.next();
-    const rightCardIndex = deck.next();
     
-    await flipCardOver('left-card', leftCardIndex);
-    await flipCardOver('right-card', rightCardIndex);
+    await flipCardOver(cardStates[LEFT]);
+    await flipCardOver(cardStates[RIGHT]);
        
-    leftCardValue = Math.floor(leftCardIndex / 4);
-    rightCardValue = Math.floor(rightCardIndex / 4);
-    const spread = Math.abs(leftCardValue - rightCardValue) - 1;
+    const spread = Math.abs(cardStates[LEFT].cardRank - cardStates[RIGHT].cardRank) - 1;
     
     switch (spread) {
         case -1: {            
-            const middleCardIndex = deck.next();
+            cardStates[MIDDLE].deal(true);
             
-            await flipCardOver('middle-card', middleCardIndex);
+            await flipCardOver(cardStates[MIDDLE]);
             
-            const middleCardValue = Math.floor(middleCardIndex / 4);
-            if (leftCardValue === middleCardValue) {
+            if (cardStates[LEFT].cardRank === cardStates[MIDDLE].cardRank) {
                 info.spread = '3 of a Kind';
                 info.pays = '11:1';
                 info.win = 12 * info.bet;
@@ -629,10 +612,13 @@ function getViewportHeight() {
 
 function handleWindowResized() {
     
-    const main = document.getElementById('main-container');
     const infoElement = document.getElementById('info');
     const belowCards = document.getElementById('below-cards');
     const canvas = document.getElementById('cards-canvas');
+    
+    if (!(infoElement && belowCards && canvas)) {
+        return;
+    }
     
     let width = canvas.width;
     let height = canvas.height;
@@ -650,14 +636,14 @@ function handleWindowResized() {
     }
     
     if (canvas.height + belowCards.clientHeight > getViewportHeight()) {
-        height = getViewportHeight() - belowCards.clientHeight;
+        height = Math.max(0.2 * canvas.height, getViewportHeight() - belowCards.clientHeight);
         width = height * canvas.width / canvas.height;
         canvas.style.width = `${width}px`;
         canvas.style.height = `${height}px`;
     }
     
     if (width > getViewportWidth()) {
-        width = getViewportWidth();
+        width = Math.max(0.25 * canvas.width, getViewportWidth());
         height = width * canvas.height / canvas.width;
         canvas.style.width = `${width}px`;
         canvas.style.height = `${height}px`;
