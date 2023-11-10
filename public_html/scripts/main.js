@@ -603,11 +603,11 @@ function getViewportWidth() {
 }
 
 function getViewportHeight() {
-    return window.innerHeight && document.documentElement.clientHeight ? 
+    return (window.innerHeight && document.documentElement.clientHeight ? 
             Math.min(window.innerHeight, document.documentElement.clientHeight) : 
             window.innerHeight || 
             document.documentElement.clientHeight || 
-            document.getElementsByTagName('body')[0].clientHeight;
+            document.getElementsByTagName('body')[0].clientHeight) - 50;
 }
 
 function handleWindowResized() {
@@ -648,6 +648,16 @@ function handleWindowResized() {
         canvas.style.width = `${width}px`;
         canvas.style.height = `${height}px`;
     }
+    
+    displayWideInfo = false;
+    infoElement.style.marginBottom = '20px';
+    updateInfo();
+    
+    if (canvas.height + belowCards.clientHeight > getViewportHeight()) {
+        displayWideInfo = true;
+        infoElement.style.marginBottom = '0px';
+        updateInfo();
+    }    
 }
 
 function init() {
