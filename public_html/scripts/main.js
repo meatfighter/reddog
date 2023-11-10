@@ -210,13 +210,35 @@ let cardImages;
 let cardStates = Array.from({ length: 3 }, (_, index) => new CardState(index));
 let displayWideInfo = false;
 
+function renderCards() {
+    const ctx = document.getElementById('cards-canvas').getContext('2d');
+    ctx.fillStyle = document.body.style.backgroundColor;
+    cardStates.forEach(cardState => renderCard(ctx, cardState));
+}
+
 function renderCard(ctx, cardState) {
     
     if (!cardState.changed) {
         return;
     }
     
+    const x = Math.ceil(cardState.index * (25 + MAX_CARD_WIDTH));
+        
+    ctx.fillRect(x, 0, Math.ceil(MAX_CARD_WIDTH), Math.ceil(MAX_CARD_HEIGHT));
     
+    if (!cardState.visible) {
+        return;
+    }
+    
+    const image = cardImages[cardState.backSide ? BACK : cardState.cardIndex];
+    
+    if (cardState.flipFraction === 0 || cardState.flipFraction === 1) {
+        ctx.drawImage(image, x, 0);
+        return;
+    }
+    
+    ctx.drawImage(image, x + MAX_CARD_WIDTH / 2 - MAX_CARD_WIDTH, 0, 
+            MAX_CARD_WIDTH * Math.abs(Math.cos(Math.PI * cardState.flipFraction)), MAX_CARD_HEIGHT);
 }
 
 async function fetchContent(url, options = {}, responseType = 'text') {
