@@ -124,8 +124,7 @@ const State = {
     CONTINUING: 2
 };
 
-const MAX_SIDE_CARD_WIDTH = 249.4492188;
-const MAX_MIDDLE_CARD_WIDTH = 222.78255213333333333333333333333;
+const MAX_CARD_WIDTH = 222.78255213333333333333333333333;
 const MAX_CARD_HEIGHT = 323.5559896;
 
 const CARD_FLIP_MILLIS = 250;
@@ -145,14 +144,14 @@ const info = {
 };
 
 let state;
-let svgCards;
+let cardImages;
 let leftCardValue;
 let rightCardValue;
 
 let displayWideInfo = false;
 let cardScale = 1.0;
 let leftCardTranslateX = 0;
-let rightCardTranslateX = MAX_SIDE_CARD_WIDTH - MAX_MIDDLE_CARD_WIDTH;
+let rightCardTranslateX = 0;
 let cardTranslateY = 0;
 
 async function fetchContent(url, options = {}, responseType = 'text') {
@@ -180,6 +179,22 @@ async function fetchContent(url, options = {}, responseType = 'text') {
     throw new Error("Failed to fetch.");
 }
 
+function convertSvgToImage(svgContent) {
+    
+    const index = svgContent.indexOf('<svg');
+    if (index < 0) {
+        return;
+    }
+    svgContent = svgContent.substring(index);
+    
+    return new Promise((resolve, reject) => {
+        const image = new Image();
+        image.onload = () => resolve(image);
+        image.onerror = reject;
+        image.src = `data:image/svg+xml; charset=utf8, ${encodeURIComponent(svgContent)}`;        
+    });
+}
+
 function downloadPanels() {
     Promise.all(Object.values(Panels).map(name => fetchContent(`${name}.html`))).then(panels => handlePanels(panels))
             .catch(_ => displayFatalError());
@@ -199,15 +214,16 @@ function downloadCards() {
     const progressBar = document.getElementById('loading-progress');
     let count = 0;
     Promise.all(ranks.flatMap(rank => suits.map(suit => fetchContent(`cards/${rank}_of_${suit}.svg`)
-            .then(text => {
+            .then(svgContent => convertSvgToImage(svgContent))
+            .then(image => {
                 progressBar.value = ++count;
-                return text;
+                return image;
             })
     ))).then(cards => handleCards(cards)).catch(_ => displayFatalError());
 }
 
 function handleCards(cards) {
-    svgCards = cards;
+    cardImages = cards;
     document.getElementById('main-content').innerHTML = Panels.MAIN;
     updateInfo();
     showBetPanel();
@@ -242,6 +258,19 @@ function showBetPanel() {
     info.spread = '--';
     info.pays = '--';
     updateInfo();
+    
+    
+    const canvas = document.getElementById('cards-canvas');
+    const ctx = canvas.getContext('2d');
+    //ctx.drawImage(cardImages[0], 0, 0, 100, 100);
+    ctx.fillRect(0, 0, 720, 325);
+    ctx.strokeStyle = 'white';
+    ctx.moveTo(0, 0);
+    ctx.lineTo(720, 325);
+    ctx.stroke();
+    
+    
+    
 //    document.getElementById('left-card').innerHTML = svgCards[BACK];
 //    document.getElementById('middle-card').innerHTML = '';
 //    document.getElementById('right-card').innerHTML = svgCards[BACK];
@@ -511,109 +540,46 @@ function getViewportHeight() {
             document.getElementsByTagName('body')[0].clientHeight;
 }
 
-function handleWindowResized() { 
-    
-/*
+function handleWindowResized() {
     
     const main = document.getElementById('main-container');
-    const infoElement = document.getElementById('info');  
+    const infoElement = document.getElementById('info');
+    const belowCards = document.getElementById('below-cards');
+    const canvas = document.getElementById('cards-canvas');
+    
+    let width = canvas.width;
+    let height = canvas.height;
+    canvas.style.width = `${width}px`;
+    canvas.style.height = `${height}px`;
     
     displayWideInfo = false;
     infoElement.style.marginBottom = '20px';
     updateInfo();
     
-    if (main.clientHeight > getViewportHeight()) {
+    if (canvas.height + belowCards.clientHeight > getViewportHeight()) {
         displayWideInfo = true;
         infoElement.style.marginBottom = '0px';
         updateInfo();
     }
     
-    const leftCard = document.getElementById('left-card');
-    const middleCard = document.getElementById('middle-card');
-    const rightCard = document.getElementById('right-card');
-    const message = document.getElementById('message');
-    const buttonRow = document.getElementById('button-row');
-    
-    cardScale = 1;
-    leftCardTranslateX = 0;
-    rightCardTranslateX = MAX_SIDE_CARD_WIDTH - MAX_MIDDLE_CARD_WIDTH;
-    cardTranslateY = 0;
-    
-    const maxCardPxHeight = `${MAX_CARD_HEIGHT}px`;
-    leftCard.style.height = maxCardPxHeight;
-    middleCard.style.height = maxCardPxHeight;
-    rightCard.style.height = maxCardPxHeight;
-    
-//    leftCard.style.transform = '';
-//    middleCard.style.transform = '';
-//    rightCard.style.transform = `translateX(${rightCardTranslateX}px)`;
-    
-    if (main.clientHeight > getViewportHeight()) {
-        const cardHeight = Math.max(getViewportHeight() - infoElement.clientHeight - message.clientHeight 
-                - buttonRow.clientHeight - 40, 0.2 * MAX_CARD_HEIGHT);
-        
-        cardScale = Math.min(1, cardHeight / MAX_CARD_HEIGHT);
-        
-        const cardPxHeight = `${cardHeight}px`;
-        leftCard.style.height = cardPxHeight;
-        middleCard.style.height = cardPxHeight;
-        rightCard.style.height = cardPxHeight;
-        
-        const middleCardWidth = MAX_MIDDLE_CARD_WIDTH * cardScale;
-               
-        leftCardTranslateX = (MAX_SIDE_CARD_WIDTH * (1 - cardScale)) 
-                * Math.sqrt(MAX_MIDDLE_CARD_WIDTH / MAX_SIDE_CARD_WIDTH);
-        rightCardTranslateX = (MAX_SIDE_CARD_WIDTH - MAX_MIDDLE_CARD_WIDTH) * cardScale - leftCardTranslateX;
-        
-        cardTranslateY = (cardHeight - MAX_CARD_HEIGHT) / 2;
-        
-//        leftCard.style.transform 
-//                = `translateX(${leftCardTranslateX}px) scale(${cardScale}) translateY(${cardTranslateY}px)`;
-//        middleCard.style.transform = `scale(${cardScale}) translateY(${cardTranslateY}px)`;
-//        rightCard.style.transform 
-//                = `translateX(${rightCardTranslateX}px) scale(${cardScale}) translateY(${cardTranslateY}px)`;
+    if (canvas.height + belowCards.clientHeight > getViewportHeight()) {
+        height = getViewportHeight() - belowCards.clientHeight;
+        width = height * canvas.width / canvas.height;
+        canvas.style.width = `${width}px`;
+        canvas.style.height = `${height}px`;
     }
     
-    if (main.clientWidth > getViewportWidth()) {
-        
-        cardScale = Math.min(cardScale, getViewportWidth() / (2 * MAX_SIDE_CARD_WIDTH + MAX_MIDDLE_CARD_WIDTH));
-        
-        const cardHeight = MAX_CARD_HEIGHT * cardScale;
-        
-        const cardPxHeight = `${cardHeight}px`;
-        leftCard.style.height = cardPxHeight;
-        middleCard.style.height = cardPxHeight;
-        rightCard.style.height = cardPxHeight;
-        
-        const middleCardWidth = MAX_MIDDLE_CARD_WIDTH * cardScale;
-               
-        leftCardTranslateX = (MAX_SIDE_CARD_WIDTH * (1 - cardScale)) 
-                * Math.sqrt(MAX_MIDDLE_CARD_WIDTH / MAX_SIDE_CARD_WIDTH);
-        rightCardTranslateX = (MAX_SIDE_CARD_WIDTH - MAX_MIDDLE_CARD_WIDTH) * cardScale - leftCardTranslateX;
-        
-        cardTranslateY = (cardHeight - MAX_CARD_HEIGHT) / 2;
-        
-//        leftCard.style.transform 
-//                = `translateX(${leftCardTranslateX}px) scale(${cardScale}) translateY(${cardTranslateY}px)`;
-//        middleCard.style.transform = `scale(${cardScale}) translateY(${cardTranslateY}px)`;
-//        rightCard.style.transform 
-//                = `translateX(${rightCardTranslateX}px) scale(${cardScale}) translateY(${cardTranslateY}px)`;
+    if (width > getViewportWidth()) {
+        width = getViewportWidth();
+        height = width * canvas.height / canvas.width;
+        canvas.style.width = `${width}px`;
+        canvas.style.height = `${height}px`;
     }
-    
-    displayWideInfo = false;
-    infoElement.style.marginBottom = '20px';
-    updateInfo();
-    
-    if (main.clientHeight > getViewportHeight()) {
-        displayWideInfo = true;
-        infoElement.style.marginBottom = '0px';
-        updateInfo();
-    }    */
 }
 
 function init() {
-//    window.addEventListener('resize', handleWindowResized);
-//    window.addEventListener('orientationchange', handleWindowResized);
+    window.addEventListener('resize', handleWindowResized);
+    window.addEventListener('orientationchange', handleWindowResized);
     downloadPanels();
 }
 

@@ -11,7 +11,7 @@ body {
     margin: 0;
     padding: 0;
     font-family: 'Open Sans', sans-serif;
-    /*overflow: hidden;*/
+    overflow: hidden;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 }
@@ -67,61 +67,14 @@ body {
 }
 
 .column-container {
-/*    display: flex;
+    display: flex;
     flex-direction: column;
-    align-items: center;*/
+    align-items: center;
 }
 
-.cards-container {
-    width: calc(2 * 25px + 3 * 222.78255213333333333333333333333px);
-    height: 323.5559896px;
-    min-width: calc(2 * 25px + 3 * 222.78255213333333333333333333333px);
-    min-height: 323.5559896px; 
-    max-width: calc(2 * 25px + 3 * 222.78255213333333333333333333333px);
-    max-height: 323.5559896px;
-    position: relative;
-    flex-shrink: 0; /* Prevent flexbox from shrinking it */
-    flex-grow: 0; /* Prevent flexbox from growing it */
-}
-
-.left-card {
-    width: 222.78255213333333333333333333333px;
-    height: 323.5559896px;
-    min-width: 222.78255213333333333333333333333px;
-    min-height: 323.5559896px;
-    max-width: 222.78255213333333333333333333333px;
-    max-height: 323.5559896px;
-    position: absolute;
-    left: 0px;
-    top: 0px;
-    flex-shrink: 0; /* Prevent flexbox from shrinking it */
-    flex-grow: 0; /* Prevent flexbox from growing it */
-}
-
-.middle-card {
-    width: 222.78255213333333333333333333333px;
-    height: 323.5559896px;
-    min-width: 222.78255213333333333333333333333px;
-    min-height: 323.5559896px;
-    max-width: 222.78255213333333333333333333333px;
-    max-height: 323.5559896px;
-    position: absolute;
-    left: calc(25px + 222.78255213333333333333333333333px);
-    top: 0px;
-    flex-shrink: 0; /* Prevent flexbox from shrinking it */
-    flex-grow: 0; /* Prevent flexbox from growing it */
-}
-
-.right-card {
-    width: 222.78255213333333333333333333333px;
-    height: 323.5559896px;
-    min-width: 222.78255213333333333333333333333px;
-    min-height: 323.5559896px;
-    position: absolute;
-    left: calc(2 * 25px + 2 * 222.78255213333333333333333333333px);
-    top: 0px;
-    flex-shrink: 0; /* Prevent flexbox from shrinking it */
-    flex-grow: 0; /* Prevent flexbox from growing it */
+.cards-canvas {
+    flex-shrink: 0;
+    flex-grow: 0;
 }
 
 .button-row {
