@@ -25,6 +25,68 @@ class ArrayShuffler {
     }
 }
 
+class CardState {    
+    
+    #index;
+    #cardIndex = 0;
+    #cardRank = 0;
+    #visible = false;    
+    #backSide = false;
+    #flipFraction = 0;
+    #changed = false;
+    
+    constructor(index) {
+        this.#index = index;
+    }
+    
+    get index() {
+        return this.#index;
+    }
+
+    get cardIndex() {
+        return this.#cardIndex;
+    }
+    
+    set cardIndex(cardIndex) {
+        this.#changed = true;
+        this.#cardIndex = cardIndex;
+        this.#cardRank = Math.floor(cardIndex / 4);
+    }
+    
+    get cardRank() {
+        return this.#cardRank; 
+    }
+    
+    set visible(visible) {
+        this.#changed = true;
+        this.#visible = visible; 
+    }
+    
+    get visible() {
+        return this.#visible;
+    }
+    
+    set backSide(backSide) {
+        this.#changed = true;
+        this.#backSide = backSide;
+    }
+    
+    set flipFraction(flipFraction) {
+        this.#changed = true;
+        this.#flipFraction = flipFraction;
+    }
+    
+    get flipFraction () {
+        return this.#flipFraction;
+    }
+    
+    get changed() {
+        const value = this.#changed;
+        this.#changed = false;
+        return value;
+    }
+}
+
 const winPhrases = new ArrayShuffler([
     'Congratulations!',
     'Congrats!',
@@ -145,14 +207,17 @@ const info = {
 
 let state;
 let cardImages;
-let leftCardValue;
-let rightCardValue;
-
+let cardStates = Array.from({ length: 3 }, (_, index) => new CardState(index));
 let displayWideInfo = false;
-let cardScale = 1.0;
-let leftCardTranslateX = 0;
-let rightCardTranslateX = 0;
-let cardTranslateY = 0;
+
+function renderCard(ctx, cardState) {
+    
+    if (!cardState.changed) {
+        return;
+    }
+    
+    
+}
 
 async function fetchContent(url, options = {}, responseType = 'text') {
     for (let i = MAX_FETCH_RETRIES - 1; i >= 0; --i) {
