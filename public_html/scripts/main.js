@@ -25,6 +25,75 @@ class ArrayShuffler {
     }
 }
 
+class CardState {    
+    
+    #index;
+    #cardIndex = 0;
+    #cardRank = 0;
+    #visible = false;    
+    #backSide = false;
+    #flipFraction = 0;
+    #changed = false;
+    
+    constructor(index) {
+        this.#index = index;
+    }
+    
+    deal(backSide) {        
+        this.#cardIndex = deck.next();
+        this.#cardRank = Math.floor(this.#cardIndex / 4);
+        this.#visible = backSide;
+        this.#flipFraction = 0;
+        this.#backSide = backSide;
+        this.#changed = true;
+    }
+    
+    get index() {
+        return this.#index;
+    }
+
+    get cardIndex() {
+        return this.#cardIndex;
+    }
+        
+    get cardRank() {
+        return this.#cardRank; 
+    }
+    
+    set visible(visible) {
+        this.#changed = true;
+        this.#visible = visible; 
+    }
+    
+    get visible() {
+        return this.#visible;
+    }
+    
+    get backSide() {
+        return this.#backSide;
+    }
+    
+    set backSide(backSide) {
+        this.#changed = true;
+        this.#backSide = backSide;
+    }
+    
+    set flipFraction(flipFraction) {
+        this.#changed = true;
+        this.#flipFraction = flipFraction;
+    }
+    
+    get flipFraction () {
+        return this.#flipFraction;
+    }
+    
+    get changed() {
+        const value = this.#changed;
+        this.#changed = false;
+        return value;
+    }
+}
+
 const winPhrases = new ArrayShuffler([
     'Congratulations!',
     'Congrats!',
@@ -124,14 +193,16 @@ const State = {
     CONTINUING: 2
 };
 
-const MAX_SIDE_CARD_WIDTH = 249.4492188;
-const MAX_MIDDLE_CARD_WIDTH = 222.78255213333333333333333333333;
+const MAX_CARD_WIDTH = 222.78255213333333333333333333333;
 const MAX_CARD_HEIGHT = 323.5559896;
 
 const CARD_FLIP_MILLIS = 250;
 
 const MAX_FETCH_RETRIES = 5;
 
+const LEFT = 0;
+const MIDDLE = 1;
+const RIGHT = 2;
 const BACK = 52;
 
 const deck = new ArrayShuffler(Array.from({ length: 52 }, (_, index) => index), 49);
@@ -145,15 +216,49 @@ const info = {
 };
 
 let state;
-let svgCards;
-let leftCardValue;
-let rightCardValue;
-
+let cardImages;
+let cardStates = Array.from({ length: 3 }, (_, index) => new CardState(index));
 let displayWideInfo = false;
-let cardScale = 1.0;
-let leftCardTranslateX = 0;
-let rightCardTranslateX = MAX_SIDE_CARD_WIDTH - MAX_MIDDLE_CARD_WIDTH;
-let cardTranslateY = 0;
+
+function initCanvas() {
+    const canvas = document.getElementById('cards-canvas');
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = window.getComputedStyle(document.body).backgroundColor;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+}
+
+function renderCards() {
+    const ctx = document.getElementById('cards-canvas').getContext('2d');
+    ctx.fillStyle = window.getComputedStyle(document.body).backgroundColor;
+    cardStates.forEach(cardState => renderCard(ctx, cardState));
+    return ctx;
+}
+
+function renderCard(ctx, cardState) {
+    
+    if (!cardState.changed) {
+        return;
+    }
+    
+    const x = Math.ceil(cardState.index * (25 + MAX_CARD_WIDTH));
+        
+    ctx.fillRect(x, 0, Math.ceil(MAX_CARD_WIDTH), Math.ceil(MAX_CARD_HEIGHT));
+    
+    if (!cardState.visible) {
+        return;
+    }
+    
+    const image = cardImages[cardState.backSide ? BACK : cardState.cardIndex];
+    
+    if (cardState.flipFraction === 0 || cardState.flipFraction === 1) {
+        ctx.drawImage(image, x, 0);
+        return;
+    }
+    
+    const width = MAX_CARD_WIDTH * Math.abs(Math.cos(Math.PI * cardState.flipFraction));
+    
+    ctx.drawImage(image, x + (MAX_CARD_WIDTH - width) / 2, 0, width, MAX_CARD_HEIGHT);
+}
 
 async function fetchContent(url, options = {}, responseType = 'text') {
     for (let i = MAX_FETCH_RETRIES - 1; i >= 0; --i) {
@@ -180,6 +285,22 @@ async function fetchContent(url, options = {}, responseType = 'text') {
     throw new Error("Failed to fetch.");
 }
 
+function convertSvgToImage(svgContent) {
+    
+    const index = svgContent.indexOf('<svg');
+    if (index < 0) {
+        return;
+    }
+    svgContent = svgContent.substring(index);
+    
+    return new Promise((resolve, reject) => {
+        const image = new Image();
+        image.onload = () => resolve(image);
+        image.onerror = reject;
+        image.src = `data:image/svg+xml; charset=utf8, ${encodeURIComponent(svgContent)}`;        
+    });
+}
+
 function downloadPanels() {
     Promise.all(Object.values(Panels).map(name => fetchContent(`${name}.html`))).then(panels => handlePanels(panels))
             .catch(_ => displayFatalError());
@@ -199,17 +320,19 @@ function downloadCards() {
     const progressBar = document.getElementById('loading-progress');
     let count = 0;
     Promise.all(ranks.flatMap(rank => suits.map(suit => fetchContent(`cards/${rank}_of_${suit}.svg`)
-            .then(text => {
+            .then(svgContent => convertSvgToImage(svgContent))
+            .then(image => {
                 progressBar.value = ++count;
-                return text;
+                return image;
             })
     ))).then(cards => handleCards(cards)).catch(_ => displayFatalError());
 }
 
 function handleCards(cards) {
-    svgCards = cards;
+    cardImages = cards;
     document.getElementById('main-content').innerHTML = Panels.MAIN;
-    updateInfo();
+    initCanvas();
+    updateInfo();    
     showBetPanel();
 }
 
@@ -242,9 +365,11 @@ function showBetPanel() {
     info.spread = '--';
     info.pays = '--';
     updateInfo();
-    document.getElementById('left-card').innerHTML = svgCards[BACK];
-    document.getElementById('middle-card').innerHTML = '';
-    document.getElementById('right-card').innerHTML = svgCards[BACK];
+    
+    cardStates[LEFT].deal(true);
+    cardStates[MIDDLE].visible = false;
+    cardStates[RIGHT].deal(true);
+    renderCards();
         
     const message = document.getElementById('message');
     message.innerHTML = 'Place your bet:';
@@ -286,21 +411,19 @@ async function handleCallButton() {
     
     let minCardValue;
     let maxCardValue;
-    if (leftCardValue < rightCardValue) {
-        minCardValue = leftCardValue;
-        maxCardValue = rightCardValue;
+    if (cardStates[LEFT].cardRank < cardStates[RIGHT].cardRank) {
+        minCardValue = cardStates[LEFT].cardRank;
+        maxCardValue = cardStates[RIGHT].cardRank;
     } else {
-        minCardValue = rightCardValue;
-        maxCardValue = leftCardValue;
+        minCardValue = cardStates[RIGHT].cardRank;
+        maxCardValue = cardStates[LEFT].cardRank;
     }
     
-    const middleCardIndex = deck.next();
+    cardStates[MIDDLE].deal(false);
     
-    await await flipCardOver('middle-card', middleCardIndex);
+    await await flipCardOver(cardStates[MIDDLE]);
     
-    const middleCardValue = Math.floor(middleCardIndex / 4);
-    
-    if (middleCardValue > minCardValue && middleCardValue < maxCardValue) {
+    if (cardStates[MIDDLE].cardRank > minCardValue && cardStates[MIDDLE].cardRank < maxCardValue) {
         showContinuePanel(winPhrases.next());
         switch (info.spread) {
             case 1:
@@ -365,47 +488,28 @@ function showContinuePanel(msg) {
     handleWindowResized();
 }
 
-async function flipCardOver(elementName, cardIndex) {
+async function flipCardOver(cardState) {
     
-    const element = document.getElementById(elementName);
+    const ctx = renderCards();
     
     return new Promise(resolve => {
         
         let startTime;
-        let back = true;
         
         function animate(currentTime) {
             if (!startTime) {
                 startTime = currentTime;
             }
-            const elapsedTime = currentTime - startTime;
-            const fraction = Math.min(elapsedTime / CARD_FLIP_MILLIS, 1);
-            let scale = Math.cos(Math.PI * fraction);
-            if (scale < 0) {
-                if (back) {
-                    back = false;
-                    element.innerHTML = svgCards[cardIndex];
-                }
-                scale = -scale;
-            }
-            switch (elementName) {
-                case 'left-card':
-                    element.style.transform = `translateX(${leftCardTranslateX}px) scaleX(${scale * cardScale}) `
-                            + `scaleY(${cardScale}) translateY(${cardTranslateY}px)`;
-                    break;
-                case 'middle-card':
-                    element.style.transform = `scaleX(${scale * cardScale}) scaleY(${cardScale}) `
-                            + `translateY(${cardTranslateY}px)`;
-                    break;
-                default:
-                    element.style.transform = `translateX(${rightCardTranslateX}px) scaleX(${scale * cardScale}) `
-                            + `scaleY(${cardScale}) translateY(${cardTranslateY}px)`;
-                    break;
-            }            
             
-            if (fraction < 1) {
+            cardState.flipFraction = Math.min((currentTime - startTime) / CARD_FLIP_MILLIS, 1);
+            cardState.backSide = (cardState.flipFraction < 0.5);
+            cardState.visible |= !cardState.backSide;
+            
+            renderCard(ctx, cardState);
+            
+            if (cardState.flipFraction < 1) {
                 requestAnimationFrame(animate);
-            } else {
+            } else {                
                 resolve();
             }
         }
@@ -415,24 +519,19 @@ async function flipCardOver(elementName, cardIndex) {
 }
 
 async function dealTwoCards() {
-    const leftCardIndex = deck.next();
-    const rightCardIndex = deck.next();
     
-    await flipCardOver('left-card', leftCardIndex);
-    await flipCardOver('right-card', rightCardIndex);
+    await flipCardOver(cardStates[LEFT]);
+    await flipCardOver(cardStates[RIGHT]);
        
-    leftCardValue = Math.floor(leftCardIndex / 4);
-    rightCardValue = Math.floor(rightCardIndex / 4);
-    const spread = Math.abs(leftCardValue - rightCardValue) - 1;
+    const spread = Math.abs(cardStates[LEFT].cardRank - cardStates[RIGHT].cardRank) - 1;
     
     switch (spread) {
         case -1: {            
-            const middleCardIndex = deck.next();
+            cardStates[MIDDLE].deal(true);
             
-            await flipCardOver('middle-card', middleCardIndex);
+            await flipCardOver(cardStates[MIDDLE]);
             
-            const middleCardValue = Math.floor(middleCardIndex / 4);
-            if (leftCardValue === middleCardValue) {
+            if (cardStates[LEFT].cardRank === cardStates[MIDDLE].cardRank) {
                 info.spread = '3 of a Kind';
                 info.pays = '11:1';
                 info.win = 12 * info.bet;
@@ -504,105 +603,57 @@ function getViewportWidth() {
 }
 
 function getViewportHeight() {
-    return window.innerHeight && document.documentElement.clientHeight ? 
+    return (window.innerHeight && document.documentElement.clientHeight ? 
             Math.min(window.innerHeight, document.documentElement.clientHeight) : 
             window.innerHeight || 
             document.documentElement.clientHeight || 
-            document.getElementsByTagName('body')[0].clientHeight;
+            document.getElementsByTagName('body')[0].clientHeight) - 50;
 }
 
-function handleWindowResized() { 
+function handleWindowResized() {
     
-    const main = document.getElementById('main-container');
-    const infoElement = document.getElementById('info');  
+    const infoElement = document.getElementById('info');
+    const belowCards = document.getElementById('below-cards');
+    const canvas = document.getElementById('cards-canvas');
+    
+    if (!(infoElement && belowCards && canvas)) {
+        return;
+    }
+    
+    let width = canvas.width;
+    let height = canvas.height;
+    canvas.style.width = `${width}px`;
+    canvas.style.height = `${height}px`;
     
     displayWideInfo = false;
     infoElement.style.marginBottom = '20px';
     updateInfo();
     
-    if (main.clientHeight > getViewportHeight()) {
+    if (canvas.height + belowCards.clientHeight > getViewportHeight()) {
         displayWideInfo = true;
         infoElement.style.marginBottom = '0px';
         updateInfo();
     }
     
-    const leftCard = document.getElementById('left-card');
-    const middleCard = document.getElementById('middle-card');
-    const rightCard = document.getElementById('right-card');
-    const message = document.getElementById('message');
-    const buttonRow = document.getElementById('button-row');
-    
-    cardScale = 1;
-    leftCardTranslateX = 0;
-    rightCardTranslateX = MAX_SIDE_CARD_WIDTH - MAX_MIDDLE_CARD_WIDTH;
-    cardTranslateY = 0;
-    
-    const maxCardPxHeight = `${MAX_CARD_HEIGHT}px`;
-    leftCard.style.height = maxCardPxHeight;
-    middleCard.style.height = maxCardPxHeight;
-    rightCard.style.height = maxCardPxHeight;
-    
-    leftCard.style.transform = '';
-    middleCard.style.transform = '';
-    rightCard.style.transform = `translateX(${rightCardTranslateX}px)`;
-    
-    if (main.clientHeight > getViewportHeight()) {
-        const cardHeight = Math.max(getViewportHeight() - infoElement.clientHeight - message.clientHeight 
-                - buttonRow.clientHeight - 40, 0.2 * MAX_CARD_HEIGHT);
-        
-        cardScale = Math.min(1, cardHeight / MAX_CARD_HEIGHT);
-        
-        const cardPxHeight = `${cardHeight}px`;
-        leftCard.style.height = cardPxHeight;
-        middleCard.style.height = cardPxHeight;
-        rightCard.style.height = cardPxHeight;
-        
-        const middleCardWidth = MAX_MIDDLE_CARD_WIDTH * cardScale;
-               
-        leftCardTranslateX = (MAX_SIDE_CARD_WIDTH * (1 - cardScale)) 
-                * Math.sqrt(MAX_MIDDLE_CARD_WIDTH / MAX_SIDE_CARD_WIDTH);
-        rightCardTranslateX = (MAX_SIDE_CARD_WIDTH - MAX_MIDDLE_CARD_WIDTH) * cardScale - leftCardTranslateX;
-        
-        cardTranslateY = (cardHeight - MAX_CARD_HEIGHT) / 2;
-        
-        leftCard.style.transform 
-                = `translateX(${leftCardTranslateX}px) scale(${cardScale}) translateY(${cardTranslateY}px)`;
-        middleCard.style.transform = `scale(${cardScale}) translateY(${cardTranslateY}px)`;
-        rightCard.style.transform 
-                = `translateX(${rightCardTranslateX}px) scale(${cardScale}) translateY(${cardTranslateY}px)`;
+    if (canvas.height + belowCards.clientHeight > getViewportHeight()) {
+        height = Math.max(0.2 * canvas.height, getViewportHeight() - belowCards.clientHeight);
+        width = height * canvas.width / canvas.height;
+        canvas.style.width = `${width}px`;
+        canvas.style.height = `${height}px`;
     }
     
-    if (main.clientWidth > getViewportWidth()) {
-        
-        cardScale = Math.min(cardScale, getViewportWidth() / (2 * MAX_SIDE_CARD_WIDTH + MAX_MIDDLE_CARD_WIDTH));
-        
-        const cardHeight = MAX_CARD_HEIGHT * cardScale;
-        
-        const cardPxHeight = `${cardHeight}px`;
-        leftCard.style.height = cardPxHeight;
-        middleCard.style.height = cardPxHeight;
-        rightCard.style.height = cardPxHeight;
-        
-        const middleCardWidth = MAX_MIDDLE_CARD_WIDTH * cardScale;
-               
-        leftCardTranslateX = (MAX_SIDE_CARD_WIDTH * (1 - cardScale)) 
-                * Math.sqrt(MAX_MIDDLE_CARD_WIDTH / MAX_SIDE_CARD_WIDTH);
-        rightCardTranslateX = (MAX_SIDE_CARD_WIDTH - MAX_MIDDLE_CARD_WIDTH) * cardScale - leftCardTranslateX;
-        
-        cardTranslateY = (cardHeight - MAX_CARD_HEIGHT) / 2;
-        
-        leftCard.style.transform 
-                = `translateX(${leftCardTranslateX}px) scale(${cardScale}) translateY(${cardTranslateY}px)`;
-        middleCard.style.transform = `scale(${cardScale}) translateY(${cardTranslateY}px)`;
-        rightCard.style.transform 
-                = `translateX(${rightCardTranslateX}px) scale(${cardScale}) translateY(${cardTranslateY}px)`;
+    if (width > getViewportWidth()) {
+        width = Math.max(0.25 * canvas.width, getViewportWidth());
+        height = width * canvas.height / canvas.width;
+        canvas.style.width = `${width}px`;
+        canvas.style.height = `${height}px`;
     }
     
     displayWideInfo = false;
     infoElement.style.marginBottom = '20px';
     updateInfo();
     
-    if (main.clientHeight > getViewportHeight()) {
+    if (canvas.height + belowCards.clientHeight > getViewportHeight()) {
         displayWideInfo = true;
         infoElement.style.marginBottom = '0px';
         updateInfo();
