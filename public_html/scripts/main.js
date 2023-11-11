@@ -624,56 +624,46 @@ function getViewportHeight() {
             Math.min(window.innerHeight, document.documentElement.clientHeight) : 
             window.innerHeight || 
             document.documentElement.clientHeight || 
-            document.getElementsByTagName('body')[0].clientHeight) - 50;
+            document.getElementsByTagName('body')[0].clientHeight);
 }
 
 function handleWindowResized() {
     
+    const main = document.getElementById('main-container');
     const infoElement = document.getElementById('info');
-    const belowCards = document.getElementById('below-cards');
     const canvas = document.getElementById('cards-canvas');
     
-    if (!(infoElement && belowCards && canvas)) {
+    if (!(main && infoElement && canvas)) {
         return;
     }
     
     let width = canvas.width;
     let height = canvas.height;
-    canvas.style.width = `${width}px`;
-    canvas.style.height = `${height}px`;
+    canvas.style.width = `${canvas.width}px`;
+    canvas.style.height = `${canvas.height}px`;
     
     displayWideInfo = false;
     infoElement.style.marginBottom = '20px';
     updateInfo();
     
-    if (canvas.height + belowCards.clientHeight > getViewportHeight()) {
+    if (main.clientHeight > getViewportHeight() && getViewportWidth() > 500) {
         displayWideInfo = true;
         infoElement.style.marginBottom = '0px';
         updateInfo();
     }
     
-    if (canvas.height + belowCards.clientHeight > getViewportHeight()) {
-        height = Math.max(0.2 * canvas.height, getViewportHeight() - belowCards.clientHeight);
+    if (main.clientHeight > getViewportHeight()) {
+        height = Math.max(0.25 * canvas.height, getViewportHeight() - (main.clientHeight - canvas.height));
         width = height * canvas.width / canvas.height;
         canvas.style.width = `${width}px`;
         canvas.style.height = `${height}px`;
     }
     
-    if (width > getViewportWidth()) {
-        width = Math.max(0.25 * canvas.width, getViewportWidth());
+    if (main.clientWidth > getViewportWidth()) {
+        width = Math.max(0.25 * canvas.width, getViewportWidth() - (main.clientWidth - width));
         height = width * canvas.height / canvas.width;
         canvas.style.width = `${width}px`;
         canvas.style.height = `${height}px`;
-    }
-    
-    displayWideInfo = false;
-    infoElement.style.marginBottom = '20px';
-    updateInfo();
-    
-    if (canvas.height + belowCards.clientHeight > getViewportHeight()) {
-        displayWideInfo = true;
-        infoElement.style.marginBottom = '0px';
-        updateInfo();
     }    
 }
 
