@@ -181,8 +181,7 @@ const losePhrases = new ArrayShuffler([
 
 const Panels = {    
     BET: 'bet-panel',
-    CONTINUE: 'continue-panel',    
-    LOADING: 'loading-panel',
+    CONTINUE: 'continue-panel',
     MAIN: 'main-panel',
     RAISE: 'raise-panel'
 };
@@ -216,7 +215,7 @@ const info = {
 };
 
 let state;
-let cardImages;
+let cardImages = [];
 let cardStates = Array.from({ length: 3 }, (_, index) => new CardState(index));
 let displayWideInfo = false;
 
@@ -260,22 +259,41 @@ function renderCard(ctx, cardState) {
     ctx.drawImage(image, x + (MAX_CARD_WIDTH - width) / 2, 0, width, MAX_CARD_HEIGHT);
 }
 
-async function fetchContent(url, options = {}, responseType = 'text') {
+async function downloadFile(url, progressListener, options = {}) {
     for (let i = MAX_FETCH_RETRIES - 1; i >= 0; --i) {
         try {
-            let response = await fetch(url, options);
-            if (response.ok) {
-                switch (responseType) {
-                    case 'arrayBuffer':
-                        return await response.arrayBuffer();
-                    case 'blob':
-                        return await response.blob();
-                    case 'json':
-                        return await response.json();
-                    default:
-                        return await response.text();                        
-                }                
+            const response = await fetch(url, options);
+            if (!response.ok) {
+                continue;
+            }            
+            const contentLength = response.headers.get('Content-Length');
+            if (!contentLength) {
+                continue;
             }
+
+            const reader = response.body.getReader();            
+            const chunks = [];
+            let bytesReceived = 0;
+            while (true) {
+                const { done, value: chunk } = await reader.read();
+                if (done) {
+                    break;
+                }
+                chunks.push(chunk);
+                bytesReceived += chunk.length;
+                if (progressListener) {                    
+                    progressListener(bytesReceived, contentLength);
+                }
+            }
+
+            const uint8Array = new Uint8Array(bytesReceived);
+            let position = 0;
+            chunks.forEach(chunk => {
+                uint8Array.set(chunk, position);
+                position += chunk.length;
+            });
+
+            return uint8Array;
         } catch (error) {
             if (i === 0) {
                 throw error;
@@ -285,11 +303,11 @@ async function fetchContent(url, options = {}, responseType = 'text') {
     throw new Error("Failed to fetch.");
 }
 
-function convertSvgToImage(svgContent) {
+async function convertSvgToImage(svgContent) {
     
     const index = svgContent.indexOf('<svg');
-    if (index < 0) {
-        return;
+    if (index < 0) {        
+        return Promise.resolve(null);
     }
     svgContent = svgContent.substring(index);
     
@@ -301,39 +319,38 @@ function convertSvgToImage(svgContent) {
     });
 }
 
-function downloadPanels() {
-    Promise.all(Object.values(Panels).map(name => fetchContent(`${name}.html`))).then(panels => handlePanels(panels))
-            .catch(_ => displayFatalError());
-}
-
-function handlePanels(panels) {
-    Object.keys(Panels).forEach((key, index) => Panels[key] = panels[index]);    
-    downloadCards();
-}
-
-function downloadCards() {
-    document.getElementById('main-content').innerHTML = Panels.LOADING;
-    
-    const ranks = [ '2', '3', '4', '5', '6', '7', '8', '9', '10', 'jack', 'queen', 'king', 'ace', 'back' ];
-    const suits = [ 'clubs', 'diamonds', 'hearts', 'spades' ];
+async function handleZip(arrayBuffer) {
     
     const progressBar = document.getElementById('loading-progress');
-    let count = 0;
-    Promise.all(ranks.flatMap(rank => suits.map(suit => fetchContent(`cards/${rank}_of_${suit}.svg`)
-            .then(svgContent => convertSvgToImage(svgContent))
-            .then(image => {
-                progressBar.value = ++count;
-                return image;
-            })
-    ))).then(cards => handleCards(cards)).catch(_ => displayFatalError());
-}
-
-function handleCards(cards) {
-    cardImages = cards;
-    document.getElementById('main-content').innerHTML = Panels.MAIN;
-    initCanvas();
-    updateInfo();    
-    showBetPanel();
+    
+    const cardMap = new Map();
+    const ranks = [ '2', '3', '4', '5', '6', '7', '8', '9', '10', 'jack', 'queen', 'king', 'ace' ];
+    const suits = [ 'clubs', 'diamonds', 'hearts', 'spades' ];
+    ranks.forEach((rank, rankIndex) => 
+            suits.forEach((suit, suitIndex) => cardMap.set(`cards/${rank}_of_${suit}.svg`, 4 * rankIndex + suitIndex)));
+    cardMap.set('cards/back.svg', BACK);
+    
+    const zip = new JSZip();    
+    const entries = Object.entries((await zip.loadAsync(arrayBuffer)).files);
+       
+    for (let i = 0; i < entries.length; ++i) {
+        const [ filename, fileData ] = entries[i];  
+        progressBar.value = 50 + 50 * i / (entries.length - 1);
+        if (fileData.dir) {
+            continue;
+        }
+        const data = await fileData.async("string");
+        const cardIndex = cardMap.get(filename);
+        if (cardIndex) {
+            cardImages[cardIndex] = await convertSvgToImage(data);            
+            continue;
+        }       
+        Object.entries(Panels).forEach(([key, value]) => {
+            if (filename === `html/${value}.html`) {
+                Panels[key] = data;
+            }
+        });        
+    }
 }
 
 function handleBetButton(event) {
@@ -660,10 +677,23 @@ function handleWindowResized() {
     }    
 }
 
+function startGame() {
+    document.getElementById('main-content').innerHTML = Panels.MAIN;
+    initCanvas();
+    updateInfo();    
+    showBetPanel();
+}
+
 function init() {
     window.addEventListener('resize', handleWindowResized);
     window.addEventListener('orientationchange', handleWindowResized);
-    downloadPanels();
+    
+    const progressBar = document.getElementById('loading-progress');
+    downloadFile('reddog.zip', 
+            (bytesReceived, contentLength) => progressBar.value = 50 * bytesReceived / contentLength)
+                    .then(handleZip)
+                    .then(startGame)
+                    .catch(displayFatalError);
 }
 
 document.addEventListener('DOMContentLoaded', init);
