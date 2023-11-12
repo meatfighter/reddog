@@ -306,8 +306,8 @@ async function downloadFile(url, progressListener, options = {}) {
 async function convertSvgToImage(svgContent) {
     
     const index = svgContent.indexOf('<svg');
-    if (index < 0) {        
-        return Promise.resolve(null);
+    if (index < 0) { 
+        throw new Error("SVG content missing svg element.");
     }
     svgContent = svgContent.substring(index);
     
@@ -334,22 +334,21 @@ async function handleZip(arrayBuffer) {
     const entries = Object.entries((await zip.loadAsync(arrayBuffer)).files);
        
     for (let i = 0; i < entries.length; ++i) {
-        const [ filename, fileData ] = entries[i];  
-        progressBar.value = 50 + 50 * i / (entries.length - 1);
+        const [ filename, fileData ] = entries[i];          
         if (fileData.dir) {
             continue;
         }
-        const data = await fileData.async("string");
-        const cardIndex = cardMap.get(filename);
-        if (cardIndex) {
-            cardImages[cardIndex] = await convertSvgToImage(data);            
+        const data = await fileData.async("string");                
+        if (cardMap.has(filename)) {
+            cardImages[cardMap.get(filename)] = await convertSvgToImage(data);            
             continue;
         }       
         Object.entries(Panels).forEach(([key, value]) => {
             if (filename === `html/${value}.html`) {
                 Panels[key] = data;
             }
-        });        
+        });
+        progressBar.value = 50 + 50 * i / (entries.length - 1);
     }
 }
 
