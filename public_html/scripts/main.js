@@ -309,7 +309,7 @@ async function convertSvgToImage(svgContent) {
     if (index < 0) { 
         throw new Error("SVG content missing svg element.");
     }
-    svgContent = svgContent.substring(index);
+    svgContent = `<svg preserveAspectRatio="none"${svgContent.substring(index + 4)}`;
     
     return new Promise((resolve, reject) => {
         const image = new Image();
