@@ -16,6 +16,12 @@ body {
     -moz-osx-font-smoothing: grayscale;
 }
 
+@media (pointer: coarse) {
+    html, body {
+        touch-action: manipulation;
+    }
+}
+
 #main-content {
     display: flex;
     justify-content: center;

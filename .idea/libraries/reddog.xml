@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="reddog">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/public_html/reddog.zip!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

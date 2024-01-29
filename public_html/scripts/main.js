@@ -674,6 +674,7 @@ function startGame() {
 }
 
 function init() {
+    document.addEventListener('dblclick', e => e.preventDefault(), { passive: false });
     window.addEventListener('resize', handleWindowResized);
     window.addEventListener('orientationchange', handleWindowResized);
     
